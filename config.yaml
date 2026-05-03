@@ -1,0 +1,36 @@
+# ============================================================
+# 长篇小说写作 Pipeline 配置
+# ============================================================
+
+# 模型配置（环境变量 LLM_MODEL 优先，此处为 fallback）
+model_name: "default-model"
+
+# 上下文窗口大小（token 数，粗略估算用）
+max_context_tokens: 30000
+
+# 生成参数
+generation_temperature: 0.8
+generation_top_p: 0.9
+max_output_tokens: 4000
+
+# 路径配置（相对于项目根目录）
+paths:
+  memory_dir: "memory"
+  outlines_dir: "outlines"
+  chapters_dir: "chapters"
+  outputs_dir: "outputs"
+  contexts_dir: "outputs/contexts"
+  reports_dir: "outputs/reports"
+
+# 默认写作风格规则
+default_style_rules:
+  - "使用中文写作，语言简洁有力，避免翻译腔"
+  - "叙事节奏张弛有度，不要平铺直叙"
+  - "对话要符合人物性格，不要千人一面"
+  - "描写要有画面感，善用五感细节"
+  - "避免大段心理独白，用行为和细节暗示内心"
+  - "每章结尾留钩子，制造悬念"
+  - "不要用总结性的语句概括情节"
+  - "禁止出现：'他心想'、'她感到'等直白心理描写标签"
+  - "禁止出现：'突然'、'忽然'作为段落开头"
+  - "禁止出现：'不知不觉'、'时光飞逝'等偷懒表述"

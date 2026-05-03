@@ -1,0 +1,27 @@
+# ============================================================
+# 伏笔追踪
+# ============================================================
+
+active:
+  - id: "fs001"
+    introduced_in: "ch001"
+    description: "王老根反复摸胸口内袋，里面藏着一张旧医院单据。"
+    related_characters: ["王老根", "王二"]
+    planned_resolution: "中段揭示王老根一直在偷偷看病，并隐瞒咳血。"
+    status: "active"
+
+  - id: "fs002"
+    introduced_in: "ch001"
+    description: "王二看到桥下有人卖一个银色旧镯子，想起母亲。"
+    related_characters: ["王二", "王老根"]
+    planned_resolution: "后文揭示父亲当年卖掉母亲银镯子的真实原因。"
+    status: "active"
+
+  - id: "fs003"
+    introduced_in: "ch001"
+    description: "小满画了一张三个人站在桥上的画，但没有画脸。"
+    related_characters: ["王二", "刘梅", "小满"]
+    planned_resolution: "后文王二在最窘迫的时候看见这张画，决定去见女儿。"
+    status: "active"
+
+resolved: []
