@@ -7,11 +7,16 @@ A local-first long-form fiction pipeline powered by local LLMs, LoRA adapters, a
 [![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-111827)](#)
 [![llama.cpp Ready](https://img.shields.io/badge/llama.cpp-Ready-6B7280)](#)
 [![LoRA Ready](https://img.shields.io/badge/LoRA-Ready-8B5CF6)](#)
+[![Hugging Face LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
 [![License TBD](https://img.shields.io/badge/License-TBD-lightgrey)](#license)
 
 English | [简体中文](./README.md)
 
-📚 Novel Writing Pipeline is a local-first workflow for drafting long-form fiction with local models. It does not ask a model to write an entire book in one pass. Instead, it turns novel writing into a repeatable loop:
+GitHub: [DuckTraDo/Novel](https://github.com/DuckTraDo/Novel) · LoRA: [Hugging Face release](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
+
+📚 I love reading novels, and one common problem I see in AI-generated long fiction is that the story often falls apart as it gets longer: context becomes too long, hallucinations increase, characters forget what they know, foreshadowing disappears, tone drifts, and later chapters feel disconnected from earlier ones. This project is built to address that problem.
+
+It does not ask a model to write an entire book in one pass. Instead, it turns novel writing into a repeatable workflow:
 
 one-line chapter idea → expanded chapter outline → scene-level context → local model scene draft → author review → memory update → consistency check → next chapter
 
@@ -24,11 +29,12 @@ one-line chapter idea → expanded chapter outline → scene-level context → l
 - [What It Is](#what-it-is)
 - [Workflow](#workflow)
 - [✨ Features](#features)
+- [🖋️ LoRA Weights](#lora-weights)
 - [🧠 Why Structured Memory Matters](#why-structured-memory-matters)
 - [📁 Project Structure](#project-structure)
 - [🚀 Quick Start](#quick-start)
 - [🧩 Core Files](#core-files)
-- [🖋️ LoRA Roadmap](#lora-roadmap)
+- [🧪 LoRA Roadmap](#lora-roadmap)
 - [🛡️ Privacy / Safety](#privacy-safety)
 - [🗺️ Roadmap](#roadmap)
 - [🤝 Contributing](#contributing)
@@ -38,7 +44,7 @@ one-line chapter idea → expanded chapter outline → scene-level context → l
 
 This project is a file-based fiction pipeline for writers and builders experimenting with local LLMs. It combines chapter outlining, scene-level context building, local text generation, structured memory updates, and consistency checks into one practical workflow.
 
-It is intentionally simple: no database is required, and the core state lives in readable YAML / JSONL files.
+It is intentionally simple: no database is required, and the core state lives in readable YAML / JSONL files. The author decides where the story goes; the model drafts scenes; the pipeline carries memory forward.
 
 ## Workflow
 
@@ -67,6 +73,39 @@ flowchart TD
 - Post-chapter memory updates
 - Consistency checking
 - File-based pipeline: simple, inspectable, and database-free
+- First Chinese fiction LoRA released on Hugging Face
+
+<a id="lora-weights"></a>
+
+## 🖋️ LoRA Weights
+
+The first Chinese fiction prose LoRA is now available on Hugging Face:
+
+**https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora**
+
+| Item | Details |
+| --- | --- |
+| Weights | [Hugging Face LoRA repo](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora) |
+| GitHub repo | Pipeline code, docs, and configuration templates only |
+| Suggested serving path | Serve your base model + LoRA adapter through llama.cpp or another OpenAI-compatible local server |
+| Status | First release is available; more Chinese fiction style adapters are planned |
+
+It focuses on:
+
+- small-town realism
+- family wounds
+- working-class characters
+- restrained narration
+- emotionally understated prose
+- dark humor
+- long-form fiction drafting
+
+Notes:
+
+- LoRA weights are hosted on Hugging Face, not in this GitHub repo
+- This GitHub repo only contains the pipeline code, docs, and configuration templates
+- Download the LoRA from Hugging Face if you want to test it
+- More Chinese fiction style adapters and demo projects are coming soon
 
 <a id="why-structured-memory-matters"></a>
 
@@ -133,9 +172,17 @@ pipeline/
 pip install openai pyyaml
 ```
 
-### 2. Point the pipeline at your local model server
+### 2. Optional: download the first LoRA release
 
-The example below uses an OpenAI-compatible local endpoint. Replace the model value with the name exposed by your own server.
+If you want to test the first LoRA release, download it from Hugging Face:
+
+**https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora**
+
+Then serve your base model with the LoRA adapter through llama.cpp or another OpenAI-compatible local server.
+
+### 3. Point the pipeline at your local model server
+
+Use generic environment values only. Replace the model value with the name exposed by your own local server.
 
 ```powershell
 $env:LLM_BASE_URL="http://localhost:18084/v1"
@@ -143,13 +190,13 @@ $env:LLM_API_KEY="local"
 $env:LLM_MODEL="your-model-name.gguf"
 ```
 
-### 3. Expand a chapter outline
+### 4. Expand a chapter outline
 
 ```powershell
 python scripts/expand_chapter_outline.py --chapter ch001 --idea "第一章：王二在肉铺下班，买半斤肉去桥下看父亲。父子关系冷淡，父亲咳血但藏起来。" --overwrite
 ```
 
-### 4. Generate scene drafts
+### 5. Generate scene drafts
 
 ```powershell
 python scripts/generate_scene_local.py --chapter ch001 --scene scene001
@@ -157,7 +204,7 @@ python scripts/generate_scene_local.py --chapter ch001 --scene scene002
 python scripts/generate_scene_local.py --chapter ch001 --scene scene003
 ```
 
-### 5. Check continuity and update memory
+### 6. Check continuity and update memory
 
 ```powershell
 python scripts/check_consistency.py --chapter ch001
@@ -180,21 +227,21 @@ python scripts/update_memory_after_chapter.py --chapter ch001
 
 <a id="lora-roadmap"></a>
 
-## 🖋️ LoRA Roadmap
+## 🧪 LoRA Roadmap
 
-The first prose-style LoRA release will focus on a plain, restrained, darkly humorous Chinese realist prose style. It is designed for testing grounded family drama, small-town realism, working-class characters, and emotionally restrained narration.
-
-The first LoRA will be released for free and open use. More style adapters and demo projects are coming soon.
+The first Chinese fiction prose LoRA has been released on Hugging Face for free and open use. It focuses on a plain, restrained, darkly humorous Chinese realist prose style. It is designed for testing grounded family drama, small-town realism, working-class characters, and emotionally restrained narration.
 
 Future style directions may include:
 
-- Realist fiction
-- Crime and suspense
-- Mythic and supernatural tales
-- Emotion-driven romance
-- Short-drama web fiction
-- Classical court intrigue
-- Dark comedy
+- realist fiction
+- crime and suspense
+- mythic and supernatural tales
+- emotion-driven romance
+- short-drama web fiction
+- classical court intrigue
+- dark comedy
+
+More style adapters and demo projects are coming soon.
 
 <a id="privacy-safety"></a>
 
@@ -207,19 +254,21 @@ This repository is designed for local writing and local inference. Before publis
 - Do not commit GGUF / safetensors / LoRA model or adapter files
 - Do not commit private drafts in `chapters/`
 - Do not commit generated artifacts in `outputs/`
+- Do not commit raw training text or unauthorized source material
 - The current `.gitignore` excludes common local models, private drafts, generated contexts, and reports by default
 
 <a id="roadmap"></a>
 
 ## 🗺️ Roadmap
 
-- [x] File-based memory system
-- [x] Automatic chapter outline expansion
-- [x] Scene-level context building
+- [x] File-based story memory
+- [x] Chapter outline expansion
+- [x] Scene-level context builder
 - [x] Local model scene generation
-- [x] Post-chapter memory updates
-- [x] Consistency checking
-- [ ] Example novel demo
+- [x] Post-chapter memory update
+- [x] Consistency checker
+- [x] First Chinese fiction LoRA released on Hugging Face
+- [ ] Demo novel project
 - [ ] Web UI
 - [ ] BM25 / FAISS retrieval
 - [ ] GraphRAG
