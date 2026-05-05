@@ -1,6 +1,6 @@
 """
 update_memory_after_chapter.py
-章节写完后，读取某章所有 scene，调用 LLM 抽取结构化记忆更新。
+章节写完后，读取 chapters/<chapter_id>/chapter.md，调用 LLM 抽取结构化记忆更新。
 
 用法:
     python scripts/update_memory_after_chapter.py --chapter ch001
@@ -16,12 +16,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from utils import (
     get_project_root, ensure_dirs, load_yaml, save_yaml,
-    load_json, save_json, append_jsonl, find_scene_files,
+    load_json, save_json, append_jsonl,
     read_text, write_text, call_local_llm,
+    configure_utf8_stdio,
 )
 
 
-EXTRACTION_PROMPT_TEMPLATE = """你是一位专业的小说编辑助手。请阅读以下章节正文，然后以严格的JSON格式输出结构化的记忆更新信息。
+EXTRACTION_PROMPT_TEMPLATE = """你是一位专业的小说编辑助手。请阅读以下完整章节正文，然后以严格的JSON格式输出结构化的长期记忆更新信息。
 
 ## 章节正文
 
@@ -45,7 +46,8 @@ EXTRACTION_PROMPT_TEMPLATE = """你是一位专业的小说编辑助手。请阅
   "events": [
     {{
       "event_id": "{chapter_id}_evt001",
-      "type": "scene/conflict/revelation/decision/travel/battle",
+      "chapter_id": "{chapter_id}",
+      "type": "chapter_event/conflict/revelation/decision/travel/battle/task/reward/discovery",
       "characters": ["角色名"],
       "description": "事件描述",
       "location": "地点",
@@ -91,17 +93,19 @@ EXTRACTION_PROMPT_TEMPLATE = """你是一位专业的小说编辑助手。请阅
 
 
 def extract_chapter_text(chapter_id: str) -> str:
-    """读取某章所有场景文件，拼接成完整文本"""
-    scene_files = find_scene_files(chapter_id)
-    if not scene_files:
-        print(f"[错误] 未找到 {chapter_id} 的场景文件")
+    """读取完整章节正文。"""
+    root = get_project_root()
+    chapter_path = root / "chapters" / chapter_id / "chapter.md"
+    if not chapter_path.exists():
+        print(f"[错误] 未找到 {chapter_path}")
+        print("[提示] 请先运行: python scripts/generate_chapter_local.py --chapter "
+              f"{chapter_id} --idea \"这一章大概发生什么。\"")
         sys.exit(1)
-    parts = []
-    for sf in scene_files:
-        text = read_text(sf)
-        if text.strip():
-            parts.append(f"--- {sf.stem} ---\n{text}")
-    return "\n\n".join(parts)
+    text = read_text(chapter_path).strip()
+    if not text:
+        print(f"[错误] {chapter_path} 是空文件")
+        sys.exit(1)
+    return text
 
 
 def call_llm_for_extraction(chapter_id: str, chapter_text: str) -> str:
@@ -160,6 +164,7 @@ def apply_memory_updates(data: dict, chapter_id: str):
     # 2. 追加事件
     events = data.get("events", [])
     for evt in events:
+        evt.setdefault("chapter_id", chapter_id)
         append_jsonl(root / "memory" / "events.jsonl", evt)
     if events:
         print(f"[更新] 已追加 {len(events)} 条事件")
@@ -168,6 +173,7 @@ def apply_memory_updates(data: dict, chapter_id: str):
     for evt in events:
         append_jsonl(root / "memory" / "timeline.jsonl", {
             "event_id": evt.get("event_id", ""),
+            "chapter_id": chapter_id,
             "time": evt.get("time_order", ""),
             "description": evt.get("description", ""),
             "characters": evt.get("characters", []),
@@ -356,6 +362,7 @@ def generate_report(data: dict, chapter_id: str, raw_output: str):
 
 
 def main():
+    configure_utf8_stdio()
     parser = argparse.ArgumentParser(description="章节完成后更新记忆")
     parser.add_argument("--chapter", required=True, help="章节 ID，如 ch001")
     args = parser.parse_args()
@@ -363,7 +370,7 @@ def main():
     ensure_dirs()
     chapter_id = args.chapter
 
-    print(f"[信息] 正在读取 {chapter_id} 的所有场景...")
+    print(f"[信息] 正在读取 {chapter_id}/chapter.md...")
     chapter_text = extract_chapter_text(chapter_id)
     print(f"[信息] 章节文本长度: {len(chapter_text)} 字符")
 

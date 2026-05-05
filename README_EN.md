@@ -8,214 +8,137 @@ A local-first long-form fiction pipeline powered by local LLMs, LoRA adapters, a
 [![llama.cpp Ready](https://img.shields.io/badge/llama.cpp-Ready-6B7280)](#)
 [![LoRA Ready](https://img.shields.io/badge/LoRA-Ready-8B5CF6)](#)
 [![Hugging Face LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
-[![License TBD](https://img.shields.io/badge/License-TBD-lightgrey)](#license)
 
 English | [简体中文](./README.md)
 
 GitHub: [DuckTraDo/Novel](https://github.com/DuckTraDo/Novel) · LoRA: [Hugging Face release](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
 
-📚 I love reading novels, and one common problem I see in AI-generated long fiction is that the story often falls apart as it gets longer: context becomes too long, hallucinations increase, characters forget what they know, foreshadowing disappears, tone drifts, and later chapters feel disconnected from earlier ones. This project is built to address that problem.
+This project turns long-form fiction writing into a repeatable loop: the author decides the direction of each chapter, the model drafts a full chapter in one pass, and the pipeline manages long-term memory, continuity checks, and future context.
 
-It does not ask a model to write an entire book in one pass. Instead, it turns novel writing into a repeatable workflow:
-
-one-line chapter idea → expanded chapter outline → scene-level context → local model scene draft → author review → memory update → consistency check → next chapter
-
-> The author stays in control.  
-> The model drafts scenes.  
-> The pipeline remembers the story.
-
-## Table of Contents
-
-- [What It Is](#what-it-is)
-- [Workflow](#workflow)
-- [✨ Features](#features)
-- [🖋️ LoRA Weights](#lora-weights)
-- [🧠 Why Structured Memory Matters](#why-structured-memory-matters)
-- [📁 Project Structure](#project-structure)
-- [🚀 Quick Start](#quick-start)
-- [🧩 Core Files](#core-files)
-- [🧪 LoRA Roadmap](#lora-roadmap)
-- [🛡️ Privacy / Safety](#privacy-safety)
-- [🗺️ Roadmap](#roadmap)
-- [🤝 Contributing](#contributing)
-- [📌 License](#license)
-
-## What It Is
-
-This project is a file-based fiction pipeline for writers and builders experimenting with local LLMs. It combines chapter outlining, scene-level context building, local text generation, structured memory updates, and consistency checks into one practical workflow.
-
-It is intentionally simple: no database is required, and the core state lives in readable YAML / JSONL files. The author decides where the story goes; the model drafts scenes; the pipeline carries memory forward.
+The old scene-level workflow is deprecated because multiple independent generations can easily create repetition and fragmentation. The recommended workflow now generates one complete chapter at a time.
 
 ## Workflow
 
 ```mermaid
 flowchart TD
-    A[One-line chapter idea] --> B[Expand chapter outline]
-    B --> C[Build scene context]
-    C --> D[Generate scene with local model]
-    D --> E[Author review/edit]
-    E --> F[Update story memory]
-    F --> G[Consistency check]
-    G --> H[Next chapter]
+    A["Prepare base memory files"] --> B["Write one chapter idea"]
+    B --> C["Generate complete chapter.md"]
+    C --> D["Author review/edit/regenerate"]
+    D --> E["Run consistency check"]
+    E --> F["Update long-term memory"]
+    F --> G["Next chapter"]
 ```
-
-<a id="features"></a>
 
 ## ✨ Features
 
 - Local-first workflow with no dependency on cloud-hosted models
 - OpenAI-compatible API support
-- Ready for llama.cpp server
+- Ready for llama.cpp server or another compatible service
 - LoRA-ready writing style adaptation
-- One-line chapter idea expansion
-- Scene-level context builder
-- Structured story memory
+- One chapter idea generates one complete chapter
+- Structured story memory for characters, events, timeline, foreshadowing, and summaries
 - Post-chapter memory updates
-- Consistency checking
+- Full-chapter consistency checking
 - File-based pipeline: simple, inspectable, and database-free
-- First Chinese fiction LoRA released on Hugging Face
-
-<a id="lora-weights"></a>
 
 ## 🖋️ LoRA Weights
 
-The first Chinese fiction prose LoRA is now available on Hugging Face:
+The first Chinese fiction prose LoRA is available on Hugging Face:
 
 **https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora**
 
-| Item | Details |
-| --- | --- |
-| Weights | [Hugging Face LoRA repo](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora) |
-| GitHub repo | Pipeline code, docs, and configuration templates only |
-| Suggested serving path | Serve your base model + LoRA adapter through llama.cpp or another OpenAI-compatible local server |
-| Status | First release is available; more Chinese fiction style adapters are planned |
-
-It focuses on:
-
-- small-town realism
-- family wounds
-- working-class characters
-- restrained narration
-- emotionally understated prose
-- dark humor
-- long-form fiction drafting
-
-Notes:
-
-- LoRA weights are hosted on Hugging Face, not in this GitHub repo
-- This GitHub repo only contains the pipeline code, docs, and configuration templates
-- Download the LoRA from Hugging Face if you want to test it
-- More Chinese fiction style adapters and demo projects are coming soon
-
-<a id="why-structured-memory-matters"></a>
-
-## 🧠 Why Structured Memory Matters
-
-Long novels cannot rely on one giant context window. A book with hundreds of thousands of words, or even a million words, cannot be fed back into the model every time. More importantly, continuity is not just about text length. Characters change, promises are made, foreshadowing needs payoff, and timelines drift unless they are tracked.
-
-This pipeline keeps the story in structured memory:
-
-- story bible: world, themes, rules, and constraints
-- character memory: character profiles, relationships, and changes
-- events: important things that have already happened
-- timeline: order, time jumps, and sequence
-- foreshadowing: setup, status, and payoff
-- summaries: chapter-level compression
-- style bank: reusable prose references and preferences
-
-Each scene receives the context it needs, while the author keeps final control over direction and revision.
-
-<a id="project-structure"></a>
+LoRA weights are not stored in this GitHub repo. This repo contains only pipeline code, docs, and configuration templates.
 
 ## 📁 Project Structure
 
 ```text
 pipeline/
-├── config.yaml                 # Global configuration
-├── README.md                   # Chinese README
-├── README_EN.md                # English README
-├── SECURITY_CHECKLIST.md       # Safety checklist
+├── config.yaml
+├── README.md
+├── README_EN.md
+├── SECURITY_CHECKLIST.md
 │
-├── memory/                     # Persistent story memory
-│   ├── story_bible.yaml        # World, themes, and writing rules
-│   ├── characters.yaml         # Character profiles
-│   ├── foreshadowing.yaml      # Foreshadowing tracker
-│   ├── relationships.json      # Character relationships
-│   ├── timeline.jsonl          # Timeline records
-│   ├── events.jsonl            # Event records
-│   ├── chapter_summaries.jsonl # Chapter summaries
-│   └── style_bank.jsonl        # Prose style references
+├── memory/
+│   ├── story_bible.yaml
+│   ├── characters.yaml
+│   ├── foreshadowing.yaml
+│   ├── relationships.json
+│   ├── timeline.jsonl
+│   ├── events.jsonl
+│   ├── chapter_summaries.jsonl
+│   └── style_bank.jsonl
 │
-├── outlines/                   # Outline files
-│   ├── book_outline.yaml       # Book-level outline
-│   └── chapter_outlines.yaml   # Chapter and scene outlines
+├── outlines/
+│   └── book_outline.yaml
 │
-├── chapters/                   # Local private drafts, ignored by default
-├── outputs/                    # Local generated contexts and reports, ignored by default
+├── chapters/
+│   └── ch001/
+│       └── chapter.md
 │
-└── scripts/                    # Pipeline scripts
+├── outputs/
+│   └── reports/
+│
+└── scripts/
     ├── utils.py
-    ├── expand_chapter_outline.py
-    ├── build_context.py
-    ├── generate_scene_local.py
+    ├── generate_chapter_local.py
+    ├── check_consistency.py
     ├── update_memory_after_chapter.py
-    └── check_consistency.py
+    └── reset_chapter.py
 ```
 
-<a id="quick-start"></a>
+## 🚀 Recommended Writing Workflow
 
-## 🚀 Quick Start
+### 1. Before starting a new book, edit the base files
 
-### 1. Install dependencies
+- `memory/story_bible.yaml`
+- `memory/characters.yaml`
+- `outlines/book_outline.yaml`
+- `memory/style_bank.jsonl`
+- `memory/foreshadowing.yaml` optional
+
+### 2. For each chapter, write one chapter idea
 
 ```powershell
-pip install openai pyyaml
+python scripts/generate_chapter_local.py --chapter ch001 --idea "Chapter 1: The protagonist returns to their hometown, finds a letter left by their father, and decides to investigate an old family secret." --target-words 4000 --overwrite
 ```
 
-### 2. Optional: download the first LoRA release
-
-If you want to test the first LoRA release, download it from Hugging Face:
-
-**https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora**
-
-Then serve your base model with the LoRA adapter through llama.cpp or another OpenAI-compatible local server.
-
-### 3. Point the pipeline at your local model server
-
-Use generic environment values only. Replace the model value with the name exposed by your own local server.
+You can also read the idea from a file:
 
 ```powershell
-$env:LLM_BASE_URL="http://localhost:18084/v1"
-$env:LLM_API_KEY="local"
-$env:LLM_MODEL="your-model-name.gguf"
+python scripts/generate_chapter_local.py --chapter ch001 --idea-file inputs/ch001_idea.txt --target-words 4000 --overwrite
 ```
 
-### 4. Expand a chapter outline
+### 3. Author review/edit
 
-```powershell
-python scripts/expand_chapter_outline.py --chapter ch001 --idea "第一章：王二在肉铺下班，买半斤肉去桥下看父亲。父子关系冷淡，父亲咳血但藏起来。" --overwrite
+The draft is saved at:
+
+```text
+chapters/ch001/chapter.md
 ```
 
-### 5. Generate scene drafts
+If the draft is not good enough, edit it manually or regenerate it.
 
-```powershell
-python scripts/generate_scene_local.py --chapter ch001 --scene scene001
-python scripts/generate_scene_local.py --chapter ch001 --scene scene002
-python scripts/generate_scene_local.py --chapter ch001 --scene scene003
-```
-
-### 6. Check continuity and update memory
+### 4. Consistency check
 
 ```powershell
 python scripts/check_consistency.py --chapter ch001
+```
+
+### 5. Update long-term memory
+
+```powershell
 python scripts/update_memory_after_chapter.py --chapter ch001
 ```
 
-<a id="core-files"></a>
+### 6. Repeat for the next chapter
+
+```powershell
+python scripts/generate_chapter_local.py --chapter ch002 --idea "Chapter 2: The next chapter idea goes here." --target-words 4000 --overwrite
+```
 
 ## 🧩 Core Files
 
-- `memory/story_bible.yaml`: story bible for worldbuilding, themes, constraints, and prose rules
+- `memory/story_bible.yaml`: story bible for worldbuilding, themes, constraints, and writing rules
 - `memory/characters.yaml`: character profiles and current character state
 - `memory/foreshadowing.yaml`: foreshadowing setup, status, and payoff tracking
 - `memory/events.jsonl`: important events as appendable records
@@ -223,27 +146,61 @@ python scripts/update_memory_after_chapter.py --chapter ch001
 - `memory/chapter_summaries.jsonl`: compact chapter summaries for later context
 - `memory/style_bank.jsonl`: prose references and style preferences
 - `outlines/book_outline.yaml`: book-level direction and structure
-- `outlines/chapter_outlines.yaml`: structured chapter and scene outlines
+- `chapters/<chapter_id>/chapter.md`: chapter draft
+- `outputs/reports/`: generation, consistency, and memory update reports
 
-<a id="lora-roadmap"></a>
+## Script Reference
 
-## 🧪 LoRA Roadmap
+### Generate a chapter
 
-The first Chinese fiction prose LoRA has been released on Hugging Face for free and open use. It focuses on a plain, restrained, darkly humorous Chinese realist prose style. It is designed for testing grounded family drama, small-town realism, working-class characters, and emotionally restrained narration.
+```powershell
+python scripts/generate_chapter_local.py --chapter ch001 --idea "Chapter 1: The protagonist returns to their hometown, finds a letter left by their father, and decides to investigate an old family secret." --target-words 4000 --overwrite
+```
 
-Future style directions may include:
+Common options:
 
-- realist fiction
-- crime and suspense
-- mythic and supernatural tales
-- emotion-driven romance
-- short-drama web fiction
-- classical court intrigue
-- dark comedy
+- `--idea` / `--idea-file`: choose exactly one
+- `--target-words`: target Chinese character count, default 4000
+- `--overwrite`: allow replacing an existing `chapter.md`
+- `--no-context`: generate only from the idea, without long-term memory
+- `--dry-run`: build the prompt and report without calling the LLM
 
-More style adapters and demo projects are coming soon.
+### Check consistency
 
-<a id="privacy-safety"></a>
+```powershell
+python scripts/check_consistency.py --chapter ch001
+```
+
+### Update memory
+
+```powershell
+python scripts/update_memory_after_chapter.py --chapter ch001
+```
+
+### Reset a chapter
+
+```powershell
+python scripts/reset_chapter.py --chapter ch001
+```
+
+By default this deletes only:
+
+- `chapters/ch001/`
+- `outputs/reports/ch001_*`
+
+To also filter that chapter out of long-term memory:
+
+```powershell
+python scripts/reset_chapter.py --chapter ch001 --include-memory
+```
+
+Only these files are filtered:
+
+- `memory/chapter_summaries.jsonl`
+- `memory/events.jsonl`
+- `memory/timeline.jsonl`
+
+It does not delete the story bible, character files, book outline, style bank, or foreshadowing file.
 
 ## 🛡️ Privacy / Safety
 
@@ -251,44 +208,28 @@ This repository is designed for local writing and local inference. Before publis
 
 - Do not commit `.env`
 - Do not commit credentials, tokens, or local access secrets
-- Do not commit GGUF / safetensors / LoRA model or adapter files
+- Do not commit local model or adapter files
 - Do not commit private drafts in `chapters/`
 - Do not commit generated artifacts in `outputs/`
 - Do not commit raw training text or unauthorized source material
-- The current `.gitignore` excludes common local models, private drafts, generated contexts, and reports by default
-
-<a id="roadmap"></a>
+- The current `.gitignore` excludes common local models, private drafts, and generated reports by default
 
 ## 🗺️ Roadmap
 
 - [x] File-based story memory
-- [x] Chapter outline expansion
-- [x] Scene-level context builder
-- [x] Local model scene generation
+- [x] Full-chapter generation
 - [x] Post-chapter memory update
-- [x] Consistency checker
+- [x] Full-chapter consistency checker
 - [x] First Chinese fiction LoRA released on Hugging Face
-- [ ] Demo novel project
 - [ ] Web UI
-- [ ] BM25 / FAISS retrieval
-- [ ] GraphRAG
+- [ ] Retrieval-enhanced memory
 - [ ] Multi-LoRA style library
 - [ ] One-click manuscript export
 
-<a id="contributing"></a>
-
 ## 🤝 Contributing
 
-Issues and PRs are welcome. Useful contribution areas include:
+Issues and PRs are welcome. Useful contribution areas include prompt improvements, pipeline scripts, consistency checking, and local model compatibility.
 
-- prompt improvements
-- Chinese prose style examples
-- pipeline scripts
-- consistency checker improvements
-- local model compatibility
-
-<a id="license"></a>
-
-## 📌 License
+## License
 
 License: TBD. A proper open-source license will be added soon.

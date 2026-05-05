@@ -11,6 +11,16 @@ from pathlib import Path
 from typing import Any, Optional
 
 
+def configure_utf8_stdio():
+    """在 Windows 控制台中尽量避免中文输出编码错误。"""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+
+
 # ============================================================
 # 路径工具
 # ============================================================
@@ -31,7 +41,6 @@ def ensure_dirs():
         root / "outlines",
         root / "chapters",
         root / "outputs",
-        root / "outputs" / "contexts",
         root / "outputs" / "reports",
     ]
     for d in dirs:
@@ -220,37 +229,6 @@ def call_local_llm_raw(prompt: str, system_prompt: str = "", **kwargs) -> str:
         messages.append({"role": "system", "content": system_prompt})
     messages.append({"role": "user", "content": prompt})
     return call_local_llm(messages, **kwargs)
-
-
-# ============================================================
-# 文件发现工具
-# ============================================================
-
-def find_scene_files(chapter_id: str) -> list:
-    """查找某章节下所有已写好的场景文件，按场景编号排序"""
-    root = get_project_root()
-    chapter_dir = root / "chapters" / chapter_id
-    if not chapter_dir.exists():
-        return []
-    scenes = sorted(chapter_dir.glob("scene*.md"))
-    return scenes
-
-
-def get_scene_ending(chapter_id: str, scene_id: str, char_limit: int = 1200) -> str:
-    """获取当前场景之前的上一个场景的末尾文本（最后 char_limit 个字符）"""
-    scene_files = find_scene_files(chapter_id)
-    prev_file = None
-    for sf in scene_files:
-        if sf.stem < scene_id:
-            prev_file = sf
-        else:
-            break
-    if prev_file is None:
-        return ""
-    text = read_text(prev_file)
-    if len(text) > char_limit:
-        return "..." + text[-char_limit:]
-    return text
 
 
 if __name__ == "__main__":

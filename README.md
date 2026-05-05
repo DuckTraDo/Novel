@@ -1,6 +1,6 @@
 # Novel Writing Pipeline
 
-本地大模型 + LoRA + 结构化记忆的长篇小说写作流水线
+本地大模型 + LoRA + 结构化记忆的长篇小说写作流水线。
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](#)
 [![Local LLM](https://img.shields.io/badge/Local-LLM-2E7D32)](#)
@@ -8,67 +8,38 @@
 [![llama.cpp Ready](https://img.shields.io/badge/llama.cpp-Ready-6B7280)](#)
 [![LoRA Ready](https://img.shields.io/badge/LoRA-Ready-8B5CF6)](#)
 [![Hugging Face LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
-[![License TBD](https://img.shields.io/badge/License-TBD-lightgrey)](#license)
 
 [English](./README_EN.md) | 简体中文
 
 GitHub: [DuckTraDo/Novel](https://github.com/DuckTraDo/Novel) · LoRA: [Hugging Face release](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
 
-📚 我一直很喜欢读小说，也看到现在很多 AI 写小说的痛点：上下文太长、越写到后面幻觉越多、人物记忆断裂、伏笔消失、语气漂移、章节之间撕裂感强。这个项目就是为了解决这些问题：作者决定章节走向和故事方向，模型负责起草，pipeline 负责记忆、上下文组装和连续性检查。
+这个项目把长篇小说创作拆成一个可审阅、可记忆、可持续推进的循环：作者决定每章方向，模型一次性起草完整章节，pipeline 负责长期记忆、连续性检查和后续上下文组织。
 
-它不是让模型一次性写完整本小说，而是把长篇创作拆成一个可持续、可审阅、可记忆的写作循环：
-
-一句话章节想法 → AI 扩写章节大纲 → 场景级上下文组装 → 本地模型生成正文 → 作者审阅/修改 → 章节后自动更新记忆 → 一致性检查 → 继续下一章
-
-> 作者负责方向。  
-> 模型负责起草。  
-> Pipeline 负责记忆和连续性。
-
-## 目录
-
-- [Workflow](#workflow)
-- [✨ Features](#features)
-- [🖋️ LoRA Weights](#lora-weights)
-- [🧠 Why This Exists](#why-this-exists)
-- [📁 Project Structure](#project-structure)
-- [🚀 Quick Start](#quick-start)
-- [🧩 Core Files](#core-files)
-- [🧪 LoRA Roadmap](#lora-roadmap)
-- [🛡️ Safety / Privacy](#safety-privacy)
-- [🗺️ Roadmap](#roadmap)
-- [🤝 Contributing](#contributing)
-- [📌 License](#license)
+旧版 scene-level workflow 已废弃，因为多次独立生成容易造成重复和割裂。当前推荐整章一次生成。
 
 ## Workflow
 
 ```mermaid
 flowchart TD
-    A[一句话章节想法] --> B[扩写章节大纲]
-    B --> C[构建场景上下文]
-    C --> D[本地模型生成场景]
-    D --> E[作者审阅/修改]
-    E --> F[章节后记忆更新]
-    F --> G[一致性检查]
-    G --> H[下一章]
+    A["作者准备基础记忆文件"] --> B["输入一句 chapter idea"]
+    B --> C["生成完整 chapter.md"]
+    C --> D["作者审阅/手动修改/重新生成"]
+    D --> E["一致性检查"]
+    E --> F["更新长期记忆"]
+    F --> G["下一章"]
 ```
-
-<a id="features"></a>
 
 ## ✨ Features
 
 - Local-first，不依赖云端模型
 - OpenAI-compatible API，便于接入本地推理服务
-- 支持 llama.cpp server
+- 支持 llama.cpp server 或其他兼容服务
 - 支持 LoRA 写作风格适配
-- 一句话扩写章节大纲
-- 场景级 context builder
-- 结构化记忆系统
+- 一句 chapter idea 生成完整章节
+- 结构化长期记忆：人物、事件、时间线、伏笔、章节摘要
 - 章节后记忆更新
-- 一致性检查
+- 完整章节一致性检查
 - 文件型 pipeline，简单稳定，无需数据库
-- 第一版中文小说 LoRA 已发布到 Hugging Face
-
-<a id="lora-weights"></a>
 
 ## 🖋️ LoRA Weights
 
@@ -76,135 +47,94 @@ flowchart TD
 
 **https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora**
 
-| 项目 | 说明 |
-| --- | --- |
-| 权重位置 | [Hugging Face LoRA repo](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora) |
-| GitHub 仓库 | 只放 pipeline 代码、文档和配置模板 |
-| 推荐加载方式 | 通过 llama.cpp 或其他 OpenAI-compatible 本地服务加载 base model + LoRA adapter |
-| 当前状态 | 第一版已发布，后续会继续更新更多中文小说风格方向 |
-
-它聚焦：
-
-- 县城现实
-- 家庭伤痕
-- 底层人物命运
-- 冷峻叙事
-- 克制表达
-- 黑色幽默
-- 长篇小说场景起草
-
-说明：
-
-- LoRA 权重不放在 GitHub repo 中
-- GitHub repo 只放 pipeline 代码、文档和配置模板
-- LoRA 权重请从 Hugging Face 下载
-- 未来会继续发布更多中文小说风格 LoRA 和 demo，敬请期待
-
-<a id="why-this-exists"></a>
-
-## 🧠 Why This Exists
-
-长篇小说不能只靠一个超大 context。几十万字、一百万字的故事，不可能每次都完整塞给模型；即使窗口足够大，角色变化、伏笔、时间线和叙事节奏也需要被结构化管理。
-
-这个项目把长篇写作拆成更稳的记忆系统：
-
-- story bible：世界观、主题、叙事规则
-- character memory：人物设定、关系、变化
-- events：已经发生的重要事件
-- timeline：时间线与先后顺序
-- foreshadowing：伏笔、回收与状态
-- summaries：章节摘要
-- style bank：可复用的风格参考
-
-模型每次只拿当前场景真正需要的上下文，作者则始终保留判断、修改和取舍的权力。
-
-<a id="project-structure"></a>
+LoRA 权重不放在 GitHub repo 中。GitHub repo 只放 pipeline 代码、文档和配置模板。
 
 ## 📁 Project Structure
 
 ```text
 pipeline/
-├── config.yaml                 # 全局配置
-├── README.md                   # 中文 README
-├── README_EN.md                # English README
-├── SECURITY_CHECKLIST.md       # 安全检查清单
+├── config.yaml
+├── README.md
+├── README_EN.md
+├── SECURITY_CHECKLIST.md
 │
-├── memory/                     # 持久化故事记忆
-│   ├── story_bible.yaml        # 世界观、主题、写作规则
-│   ├── characters.yaml         # 角色档案
-│   ├── foreshadowing.yaml      # 伏笔追踪
-│   ├── relationships.json      # 人物关系
-│   ├── timeline.jsonl          # 时间线记录
-│   ├── events.jsonl            # 事件记录
-│   ├── chapter_summaries.jsonl # 章节摘要
-│   └── style_bank.jsonl        # 风格参考库
+├── memory/
+│   ├── story_bible.yaml
+│   ├── characters.yaml
+│   ├── foreshadowing.yaml
+│   ├── relationships.json
+│   ├── timeline.jsonl
+│   ├── events.jsonl
+│   ├── chapter_summaries.jsonl
+│   └── style_bank.jsonl
 │
-├── outlines/                   # 大纲文件
-│   ├── book_outline.yaml       # 全书大纲
-│   └── chapter_outlines.yaml   # 章节大纲
+├── outlines/
+│   └── book_outline.yaml
 │
-├── chapters/                   # 本地生成私稿目录，默认忽略，请勿提交
-├── outputs/                    # 本地生成上下文和报告，默认忽略
+├── chapters/
+│   └── ch001/
+│       └── chapter.md
 │
-└── scripts/                    # Pipeline 脚本
+├── outputs/
+│   └── reports/
+│
+└── scripts/
     ├── utils.py
-    ├── expand_chapter_outline.py
-    ├── build_context.py
-    ├── generate_scene_local.py
+    ├── generate_chapter_local.py
+    ├── check_consistency.py
     ├── update_memory_after_chapter.py
-    └── check_consistency.py
+    └── reset_chapter.py
 ```
 
-<a id="quick-start"></a>
+## 🚀 推荐写作流程
 
-## 🚀 Quick Start
+### 1. 新书开始前，先编辑基础文件
 
-### 1. 安装依赖
+- `memory/story_bible.yaml`
+- `memory/characters.yaml`
+- `outlines/book_outline.yaml`
+- `memory/style_bank.jsonl`
+- `memory/foreshadowing.yaml` 可选
+
+### 2. 每章只写一句 chapter idea
 
 ```powershell
-pip install openai pyyaml
+python scripts/generate_chapter_local.py --chapter ch001 --idea "第一章：主角回到故乡，发现父亲留下的一封信，并决定调查多年前的旧事。" --target-words 4000 --overwrite
 ```
 
-### 2. 可选：下载第一版 LoRA
-
-如果你想使用第一版 LoRA，请先从 Hugging Face 下载：
-
-**https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora**
-
-然后用 llama.cpp 加载你的 base model 和 LoRA adapter，再把 pipeline 指向本地 OpenAI-compatible API。
-
-### 3. 设置本地模型服务
-
-示例使用 OpenAI-compatible API。模型名请使用自己的本地服务暴露出的名称。
+也可以从文件读取：
 
 ```powershell
-$env:LLM_BASE_URL="http://localhost:18084/v1"
-$env:LLM_API_KEY="local"
-$env:LLM_MODEL="your-model-name.gguf"
+python scripts/generate_chapter_local.py --chapter ch001 --idea-file inputs/ch001_idea.txt --target-words 4000 --overwrite
 ```
 
-### 4. 扩写章节大纲
+### 3. 作者检查/修改
 
-```powershell
-python scripts/expand_chapter_outline.py --chapter ch001 --idea "第一章：王二在肉铺下班，买半斤肉去桥下看父亲。父子关系冷淡，父亲咳血但藏起来。" --overwrite
+正文在：
+
+```text
+chapters/ch001/chapter.md
 ```
 
-### 5. 生成场景正文
+如果不满意，可以手动改，也可以重新生成。
 
-```powershell
-python scripts/generate_scene_local.py --chapter ch001 --scene scene001
-python scripts/generate_scene_local.py --chapter ch001 --scene scene002
-python scripts/generate_scene_local.py --chapter ch001 --scene scene003
-```
-
-### 6. 检查一致性并更新记忆
+### 4. 一致性检查
 
 ```powershell
 python scripts/check_consistency.py --chapter ch001
+```
+
+### 5. 更新长期记忆
+
+```powershell
 python scripts/update_memory_after_chapter.py --chapter ch001
 ```
 
-<a id="core-files"></a>
+### 6. 下一章同理
+
+```powershell
+python scripts/generate_chapter_local.py --chapter ch002 --idea "第二章大概发生什么。" --target-words 4000 --overwrite
+```
 
 ## 🧩 Core Files
 
@@ -213,75 +143,93 @@ python scripts/update_memory_after_chapter.py --chapter ch001
 - `memory/foreshadowing.yaml`：伏笔记录、状态和回收计划
 - `memory/events.jsonl`：事件流水账，便于后续检索和回顾
 - `memory/timeline.jsonl`：时间线记录，降低顺序错乱风险
-- `memory/chapter_summaries.jsonl`：章节摘要，帮助后续章节快速继承上下文
+- `memory/chapter_summaries.jsonl`：章节摘要，帮助后续章节继承上下文
 - `memory/style_bank.jsonl`：风格样例和表达偏好
 - `outlines/book_outline.yaml`：全书方向、结构和章节规划
-- `outlines/chapter_outlines.yaml`：结构化章节大纲与场景安排
+- `chapters/<chapter_id>/chapter.md`：每章正文
+- `outputs/reports/`：生成报告、一致性报告、记忆更新报告
 
-<a id="lora-roadmap"></a>
+## Script Reference
 
-## 🧪 LoRA Roadmap
+### Generate a chapter
 
-第一版中文小说文风 LoRA 已发布到 Hugging Face，并将保持免费开放使用。它聚焦“朴素、冷峻、荒诞现实主义、底层叙事感”的中文小说表达风格，适合现实主义、家庭叙事、县城叙事、底层人物命运等题材测试。
+```powershell
+python scripts/generate_chapter_local.py --chapter ch001 --idea "第一章：主角回到故乡，发现父亲留下的一封信，并决定调查多年前的旧事。" --target-words 4000 --overwrite
+```
 
-后续计划继续尝试更多中文小说风格方向：
+常用参数：
 
-- 现实主义
-- 悬疑犯罪
-- 神话志怪
-- 女性向情感
-- 短剧爽文
-- 古风权谋
-- 黑色幽默
+- `--idea` / `--idea-file`：二选一
+- `--target-words`：目标中文字数，默认 4000
+- `--overwrite`：允许覆盖已有 `chapter.md`
+- `--no-context`：不读取长期记忆，只根据 idea 生成
+- `--dry-run`：只构建 prompt 和报告，不调用 LLM
 
-更多 LoRA 和示例项目会陆续发布，敬请期待。
+### Check consistency
 
-<a id="safety-privacy"></a>
+```powershell
+python scripts/check_consistency.py --chapter ch001
+```
+
+### Update memory
+
+```powershell
+python scripts/update_memory_after_chapter.py --chapter ch001
+```
+
+### Reset a chapter
+
+```powershell
+python scripts/reset_chapter.py --chapter ch001
+```
+
+默认只删除：
+
+- `chapters/ch001/`
+- `outputs/reports/ch001_*`
+
+如果需要同时过滤该章在长期记忆里的记录：
+
+```powershell
+python scripts/reset_chapter.py --chapter ch001 --include-memory
+```
+
+只会过滤：
+
+- `memory/chapter_summaries.jsonl`
+- `memory/events.jsonl`
+- `memory/timeline.jsonl`
+
+不会删除 story bible、人物档案、全书大纲、风格库或伏笔文件。
 
 ## 🛡️ Safety / Privacy
 
 这个项目默认面向本地写作和本地推理。公开仓库时，请尤其注意：
 
 - 不要提交 `.env`
-- 不要提交接口密钥、访问令牌或其他凭据
-- 不要提交 GGUF / safetensors / LoRA 等本地模型或适配器文件
+- 不要提交接口密钥、访问令牌或其他凭证
+- 不要提交本地模型或适配器文件
 - 不要提交私稿 `chapters/`
 - 不要提交生成产物 `outputs/`
 - 不要提交训练数据原文或未授权文本
-- 当前 `.gitignore` 已默认排除常见本地模型、私稿和生成报告/上下文
-
-<a id="roadmap"></a>
+- 当前 `.gitignore` 已默认排除常见本地模型、私稿和生成报告
 
 ## 🗺️ Roadmap
 
 - [x] 文件型记忆系统
-- [x] 章节大纲自动扩写
-- [x] 场景级上下文构建
-- [x] 本地模型生成正文
+- [x] 整章一次生成
 - [x] 章节后记忆更新
-- [x] 一致性检查
+- [x] 完整章节一致性检查
 - [x] 第一版中文小说 LoRA 发布到 Hugging Face
-- [ ] 示例小说 demo
 - [ ] Web UI
-- [ ] BM25 / FAISS 检索
-- [ ] GraphRAG
+- [ ] 检索增强记忆
 - [ ] 多 LoRA 风格库
-- [ ] 一键导出完整 manuscript
-
-<a id="contributing"></a>
+- [ ] 一键导出书稿
 
 ## 🤝 Contributing
 
-欢迎通过 issue / PR 参与改进。适合贡献的方向包括：
+Issues and PRs are welcome. Useful contribution areas include prompt improvements, pipeline scripts, consistency checking, and local model compatibility.
 
-- prompt 改进
-- 中文写作风格样例
-- pipeline 脚本
-- consistency checker
-- 本地模型适配
-
-<a id="license"></a>
-
-## 📌 License
+## License
 
 License: TBD. A proper open-source license will be added soon.

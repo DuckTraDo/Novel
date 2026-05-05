@@ -50,8 +50,7 @@ chapters/
 # ============================================================
 # Pipeline outputs (generated, not source)
 # ============================================================
-outputs/contexts/
-outputs/reports/
+outputs/
 
 # ============================================================
 # Local input drafts

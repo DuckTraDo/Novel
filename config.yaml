@@ -19,7 +19,6 @@ paths:
   outlines_dir: "outlines"
   chapters_dir: "chapters"
   outputs_dir: "outputs"
-  contexts_dir: "outputs/contexts"
   reports_dir: "outputs/reports"
 
 # 默认写作风格规则
