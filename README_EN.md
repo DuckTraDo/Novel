@@ -232,4 +232,4 @@ Issues and PRs are welcome. Useful contribution areas include prompt improvement
 
 ## License
 
-License: TBD. A proper open-source license will be added soon.
+[MIT](./LICENSE) © 2026 DuckTraDo.

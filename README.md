@@ -15,6 +15,7 @@
 [![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-111827)](#)
 [![i18n](https://img.shields.io/badge/中文-%2F%20English-0ea5e9)](#)
 [![LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e)](./LICENSE)
 
 [简体中文](./README.md) · [English](./README_EN.md) · [GitHub](https://github.com/DuckTraDo/Novel) · [LoRA 权重](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
 
@@ -208,7 +209,7 @@ python scripts/reset_chapter.py --chapter ch001
 
 LoRA 文风权重:<https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora>
 
-License:TBD(即将补上正式开源许可)。
+License:[MIT](./LICENSE) © 2026 DuckTraDo。
 
 <div align="center">
 
