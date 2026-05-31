@@ -68,6 +68,8 @@
 
 ### 🚀 装好即用（终端用户）
 
+从 [**Releases**](https://github.com/DuckTraDo/Novel/releases) 下载对应平台安装包：Windows `*-setup.exe` · macOS `*.dmg`（arm64 / x64）· Linux `*.AppImage` / `*.deb`。
+
 1. 安装并打开 **Sodarie Novel**。
 2. 进入 **设置**，填写 **LLM Base URL**（须含 `http://`，多数本地服务在 `/v1` 下，例如
    `http://127.0.0.1:18180/v1`）与模型名称。

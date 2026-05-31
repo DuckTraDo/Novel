@@ -1,0 +1,83 @@
+name: Release
+
+# 触发方式：
+#   1) 推送形如 v0.1.0 的 tag    git tag v0.1.0 && git push origin v0.1.0
+#   2) 在 GitHub 网页 Actions 里手动 Run workflow（workflow_dispatch）
+# 产物会作为「草稿 Release」上传，确认无误后在 Releases 页点 Publish 即可。
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest # Apple Silicon (arm64) → .dmg
+            args: "--target aarch64-apple-darwin --bundles dmg"
+          - platform: macos-latest # Intel (x86_64) → .dmg
+            args: "--target x86_64-apple-darwin --bundles dmg"
+          - platform: ubuntu-22.04 # → .AppImage / .deb
+            args: "--bundles appimage,deb"
+          - platform: windows-latest # → NSIS setup.exe
+            args: "--bundles nsis"
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ contains(matrix.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev
+
+      - name: Install frontend dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Build and release (Tauri)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          tagName: v__VERSION__
+          releaseName: "Sodarie Novel v__VERSION__"
+          releaseBody: |
+            Sodarie Novel —— 本地大模型长篇小说写作台。
+
+            下载对应平台的安装包：
+            - Windows：`*-setup.exe`（NSIS 安装器）
+            - macOS：`*.dmg`（arm64 / x64）
+            - Linux：`*.AppImage` 或 `*.deb`
+
+            首次使用：打开后到「设置」填入本地 OpenAI 兼容服务地址（含 http://，多数在 /v1 下），即可开始。
+            注：安装包未做代码签名，首次打开可能需在系统中允许运行。
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
