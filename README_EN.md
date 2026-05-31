@@ -15,10 +15,10 @@ memory, continuity checks and context — so the book gets *more* consistent as 
 [![Local LLM](https://img.shields.io/badge/Local-LLM-2E7D32)](#)
 [![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-111827)](#)
 [![i18n](https://img.shields.io/badge/中文-%2F%20English-0ea5e9)](#)
-[![LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
+[![LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e)](./LICENSE)
 
-[English](./README_EN.md) · [简体中文](./README.md) · [GitHub](https://github.com/DuckTraDo/Novel) · [LoRA weights](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
+[English](./README_EN.md) · [简体中文](./README.md) · [GitHub](https://github.com/DuckTraDo/Novel) · [LoRA weights](https://huggingface.co/yuxinlu1)
 
 </div>
 
@@ -135,9 +135,16 @@ flowchart LR
 
 ## 🖋️ LoRA style weights
 
-The first Chinese-fiction style LoRA is published on Hugging Face:
+Several Chinese-fiction style LoRAs (based on Qwen3) are published, each fine-tuned for a genre — mix and match as needed:
 
-**<https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora>**
+| Genre | Model |
+| --- | --- |
+| Realistic fiction | [chinese-realistic-fiction-lora-v1](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-realistic-fiction-lora-v1) |
+| Crime / mystery | [chinese-crime-fiction-lora-v2](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-crime-fiction-lora-v2) |
+| Folk horror | [chinese-folk-horror-lora-v2](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-folk-horror-lora-v2) |
+| Xianxia (Chinese fantasy) | [chinese-xianxia-lora-v2](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-xianxia-lora-v2) |
+
+All models: **<https://huggingface.co/yuxinlu1>**
 
 > LoRA weights are not stored in the repo; the repo only holds code, docs and config templates.
 

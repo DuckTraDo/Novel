@@ -14,10 +14,10 @@
 [![Local LLM](https://img.shields.io/badge/Local-LLM-2E7D32)](#)
 [![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-111827)](#)
 [![i18n](https://img.shields.io/badge/中文-%2F%20English-0ea5e9)](#)
-[![LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
+[![LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e)](./LICENSE)
 
-[简体中文](./README.md) · [English](./README_EN.md) · [GitHub](https://github.com/DuckTraDo/Novel) · [LoRA 权重](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
+[简体中文](./README.md) · [English](./README_EN.md) · [GitHub](https://github.com/DuckTraDo/Novel) · [LoRA 权重](https://huggingface.co/yuxinlu1)
 
 </div>
 
@@ -135,9 +135,16 @@ flowchart LR
 
 ## 🖋️ LoRA 文风权重
 
-第一版中文小说文风 LoRA 已发布到 Hugging Face：
+已发布多套中文小说文风 LoRA（基于 Qwen3），按题材分别微调，可按需搭配使用：
 
-**<https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora>**
+| 题材 | 模型 |
+| --- | --- |
+| 现实主义 | [chinese-realistic-fiction-lora-v1](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-realistic-fiction-lora-v1) |
+| 犯罪悬疑 | [chinese-crime-fiction-lora-v2](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-crime-fiction-lora-v2) |
+| 民俗恐怖 | [chinese-folk-horror-lora-v2](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-folk-horror-lora-v2) |
+| 仙侠 | [chinese-xianxia-lora-v2](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-xianxia-lora-v2) |
+
+全部模型主页：**<https://huggingface.co/yuxinlu1>**
 
 > LoRA 权重不放进 GitHub 仓库；仓库只放代码、文档和配置模板。
 
@@ -209,7 +216,7 @@ python scripts/reset_chapter.py --chapter ch001
 
 也欢迎直接发 PR,尤其是 prompt 优化、流水线脚本、一致性检查、本地模型兼容性等方向。
 
-LoRA 文风权重:<https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora>
+LoRA 文风权重:<https://huggingface.co/yuxinlu1>
 
 License:[MIT](./LICENSE) © 2026 DuckTraDo。
 
