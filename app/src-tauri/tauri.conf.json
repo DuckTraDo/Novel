@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "小说写作台",
+  "productName": "Sodarie Novel",
   "version": "0.1.0",
   "identifier": "com.yuxin.novel-pipeline",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "小说写作台",
+        "title": "Sodarie Novel",
         "width": 1180,
         "height": 800,
         "minWidth": 900,

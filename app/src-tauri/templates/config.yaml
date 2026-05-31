@@ -11,7 +11,10 @@ max_context_tokens: 30000
 # 生成参数
 generation_temperature: 0.8
 generation_top_p: 0.9
-max_output_tokens: 4000
+# 生成正文 / 一致性检查的单次输出上限（token）。设为 0 表示不限制，
+# 让模型写到自然结束（仅受模型上下文窗口约束）。
+# 注意：记忆抽取（更新记忆）始终不设上限，避免 JSON 被截断。
+max_output_tokens: 8000
 
 # 路径配置（相对于项目根目录）
 paths:

@@ -9,7 +9,9 @@ struct ChatRequest {
     messages: Vec<ChatMessage>,
     temperature: f64,
     top_p: f64,
-    max_tokens: u32,
+    // None 时不发送 max_tokens，让模型生成到自然结束（仅受上下文窗口约束）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_tokens: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,9 +49,16 @@ pub fn call_llm(
     messages: Vec<ChatMessage>,
     temperature: f64,
     top_p: f64,
-    max_tokens: u32,
+    max_tokens: Option<u32>,
 ) -> Result<String, String> {
-    let url = format!("{}/chat/completions", base_url.trim_end_matches('/'));
+    // 宽容处理：用户常漏写 http:// 协议头，缺失时自动补上，避免 reqwest builder error
+    let trimmed = base_url.trim().trim_end_matches('/');
+    let normalized = if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
+        trimmed.to_string()
+    } else {
+        format!("http://{}", trimmed)
+    };
+    let url = format!("{}/chat/completions", normalized);
 
     let body = ChatRequest {
         model: model.to_string(),
@@ -106,4 +115,28 @@ pub fn call_llm(
         .first()
         .map(|c| c.message.content.clone())
         .ok_or_else(|| "模型返回的 choices 为空，没有生成内容。".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn build(max_tokens: Option<u32>) -> String {
+        let req = ChatRequest {
+            model: "m".into(),
+            messages: vec![],
+            temperature: 0.5,
+            top_p: 0.9,
+            max_tokens,
+        };
+        serde_json::to_string(&req).unwrap()
+    }
+
+    #[test]
+    fn omits_max_tokens_when_none() {
+        // None 时请求体里不应出现 max_tokens（让模型写到自然结束）
+        assert!(!build(None).contains("max_tokens"));
+        // Some 时应包含
+        assert!(build(Some(4096)).contains("\"max_tokens\":4096"));
+    }
 }

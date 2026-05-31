@@ -26,6 +26,8 @@ export const api = {
   readReport: (chapterId: string, kind: ReportKind) =>
     invoke<string>("read_report", { chapterId, kind }),
 
+  openUrl: (url: string) => invoke<void>("open_url", { url }),
+
   readMemoryFile: (rel: string) =>
     invoke<string>("read_memory_file", { rel }),
   saveMemoryFile: (rel: string, content: string) =>

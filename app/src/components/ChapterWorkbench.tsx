@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, CommandResult } from "../api";
+import { useT } from "../i18n";
 import { Banner, Field, LogBox, Spinner } from "./common";
 
 interface Props {
@@ -17,6 +18,7 @@ export default function ChapterWorkbench({
   setCurrentChapter,
   refreshChapters,
 }: Props) {
+  const t = useT();
   const [newId, setNewId] = useState("");
   const [idea, setIdea] = useState("");
   const [targetWords, setTargetWords] = useState(4000);
@@ -41,7 +43,7 @@ export default function ChapterWorkbench({
       const text = await api.readChapter(id);
       setContent(text);
       setDirty(false);
-    } catch (e) {
+    } catch {
       setContent("");
     }
   }
@@ -53,7 +55,7 @@ export default function ChapterWorkbench({
 
   function handleResult(res: CommandResult, okMsg: string) {
     setLog(res.log);
-    setBanner(res.success ? { kind: "ok", msg: okMsg } : { kind: "err", msg: "执行失败，请看下方日志。" });
+    setBanner(res.success ? { kind: "ok", msg: okMsg } : { kind: "err", msg: t("wb.execFail") });
   }
 
   function nextChapterId(): string {
@@ -68,18 +70,18 @@ export default function ChapterWorkbench({
   async function onGenerate() {
     const id = (currentChapter || newId).trim();
     if (!id) {
-      setBanner({ kind: "err", msg: "请先选择或新建一个章节 ID。" });
+      setBanner({ kind: "err", msg: t("wb.needChapter") });
       return;
     }
     if (!idea.trim()) {
-      setBanner({ kind: "err", msg: "请填写本章 idea。" });
+      setBanner({ kind: "err", msg: t("wb.needIdea") });
       return;
     }
     setBusy("generate");
-    setBanner({ kind: "info", msg: "正在调用本地模型生成整章，请稍候……" });
+    setBanner({ kind: "info", msg: t("wb.generating") });
     try {
       const res = await api.generateChapter(id, idea.trim(), targetWords, useContext, overwrite);
-      handleResult(res, `章节 ${id} 已生成。`);
+      handleResult(res, t("wb.genOk", { id }));
       if (res.success) {
         await refreshChapters();
         setCurrentChapter(id);
@@ -98,7 +100,7 @@ export default function ChapterWorkbench({
     try {
       await api.saveChapter(currentChapter, content);
       setDirty(false);
-      setBanner({ kind: "ok", msg: "正文已保存。" });
+      setBanner({ kind: "ok", msg: t("wb.saved") });
     } catch (e) {
       setBanner({ kind: "err", msg: String(e) });
     } finally {
@@ -109,10 +111,10 @@ export default function ChapterWorkbench({
   async function onCheck() {
     if (!currentChapter) return;
     setBusy("consistency");
-    setBanner({ kind: "info", msg: "正在进行一致性审查……" });
+    setBanner({ kind: "info", msg: t("wb.checking") });
     try {
       const res = await api.checkConsistency(currentChapter);
-      handleResult(res, "一致性审查完成，可到「报告」查看。");
+      handleResult(res, t("wb.checkOk"));
     } catch (e) {
       setBanner({ kind: "err", msg: String(e) });
     } finally {
@@ -123,10 +125,10 @@ export default function ChapterWorkbench({
   async function onUpdateMemory() {
     if (!currentChapter) return;
     setBusy("memory");
-    setBanner({ kind: "info", msg: "正在抽取并更新长期记忆……" });
+    setBanner({ kind: "info", msg: t("wb.memRunning") });
     try {
       const res = await api.updateMemory(currentChapter);
-      handleResult(res, "记忆更新完成。");
+      handleResult(res, t("wb.memOk"));
     } catch (e) {
       setBanner({ kind: "err", msg: String(e) });
     } finally {
@@ -137,13 +139,13 @@ export default function ChapterWorkbench({
   async function onReset() {
     if (!currentChapter) return;
     const warn = includeMemory
-      ? `确定重置 ${currentChapter}？会删除正文、报告，并从摘要/事件/时间线中过滤该章记录。`
-      : `确定重置 ${currentChapter}？会删除正文和报告（不动长期记忆）。`;
+      ? t("wb.resetConfirmMem", { id: currentChapter })
+      : t("wb.resetConfirmNo", { id: currentChapter });
     if (!window.confirm(warn)) return;
     setBusy("reset");
     try {
       const res = await api.resetChapter(currentChapter, includeMemory);
-      handleResult(res, `${currentChapter} 已重置。`);
+      handleResult(res, t("wb.resetOk", { id: currentChapter }));
       if (res.success) {
         await refreshChapters();
         setContent("");
@@ -160,14 +162,11 @@ export default function ChapterWorkbench({
   return (
     <div className="workbench">
       <div className="panel">
-        <h2>章节</h2>
+        <h2>{t("wb.chapter")}</h2>
         <div className="row">
-          <Field label="选择章节">
-            <select
-              value={currentChapter}
-              onChange={(e) => setCurrentChapter(e.target.value)}
-            >
-              <option value="">（未选择 / 新建）</option>
+          <Field label={t("wb.selectChapter")}>
+            <select value={currentChapter} onChange={(e) => setCurrentChapter(e.target.value)}>
+              <option value="">{t("wb.none")}</option>
               {chapters.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -175,35 +174,31 @@ export default function ChapterWorkbench({
               ))}
             </select>
           </Field>
-          <Field label="新建章节 ID" hint="留空选择时用此 ID 生成">
+          <Field label={t("wb.newId")} hint={t("wb.newIdHint")}>
             <div className="inline">
               <input
                 value={newId}
-                placeholder="如 ch001"
+                placeholder={t("wb.newIdPlaceholder")}
                 onChange={(e) => setNewId(e.target.value)}
               />
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setNewId(nextChapterId())}
-              >
-                自动编号
+              <button type="button" className="ghost" onClick={() => setNewId(nextChapterId())}>
+                {t("wb.autoNumber")}
               </button>
             </div>
           </Field>
         </div>
 
-        <Field label="本章 idea（一句话方向，最高优先级）">
+        <Field label={t("wb.idea")}>
           <textarea
             className="idea"
             value={idea}
-            placeholder="例：第一章，主角回到故乡，发现父亲留下的一封信，决定调查多年前的旧事。"
+            placeholder={t("wb.ideaPlaceholder")}
             onChange={(e) => setIdea(e.target.value)}
           />
         </Field>
 
         <div className="row">
-          <Field label="目标字数">
+          <Field label={t("wb.targetWords")}>
             <input
               type="number"
               value={targetWords}
@@ -214,70 +209,63 @@ export default function ChapterWorkbench({
           </Field>
           <div className="checks">
             <label>
-              <input
-                type="checkbox"
-                checked={useContext}
-                onChange={(e) => setUseContext(e.target.checked)}
-              />
-              使用长期记忆
+              <input type="checkbox" checked={useContext} onChange={(e) => setUseContext(e.target.checked)} />
+              {t("wb.useContext")}
             </label>
             <label>
-              <input
-                type="checkbox"
-                checked={overwrite}
-                onChange={(e) => setOverwrite(e.target.checked)}
-              />
-              覆盖已有正文
+              <input type="checkbox" checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} />
+              {t("wb.overwrite")}
             </label>
           </div>
         </div>
 
         <div className="actions">
           <button className="primary" onClick={onGenerate} disabled={running}>
-            {busy === "generate" ? <Spinner /> : null} 生成 / 重新生成
+            {busy === "generate" ? <Spinner /> : null} {t("wb.generate")}
           </button>
         </div>
       </div>
 
       <div className="panel">
         <div className="panel-head">
-          <h2>正文 {currentChapter ? `· ${currentChapter}` : ""}</h2>
+          <h2>
+            {t("wb.bodyTitle")} {currentChapter ? `· ${currentChapter}` : ""}
+          </h2>
           <div className="panel-actions">
             <button onClick={onSave} disabled={!currentChapter || running || !dirty}>
-              {busy === "save" ? <Spinner /> : null} 保存正文{dirty ? " *" : ""}
+              {busy === "save" ? <Spinner /> : null} {t("wb.save")}
+              {dirty ? " *" : ""}
             </button>
           </div>
         </div>
         <textarea
           className="chapter-body"
           value={content}
-          placeholder={currentChapter ? "（本章暂无正文，点击上方生成）" : "请选择或生成一个章节"}
+          placeholder={currentChapter ? t("wb.bodyHas") : t("wb.bodyNone")}
           onChange={(e) => {
             setContent(e.target.value);
             setDirty(true);
           }}
           disabled={!currentChapter}
         />
-        <div className="wordcount">{content.length} 字</div>
+        <div className="wordcount">
+          {content.length} {t("wb.words")}
+        </div>
 
         <div className="actions wrap">
           <button onClick={onCheck} disabled={!currentChapter || running}>
-            {busy === "consistency" ? <Spinner /> : null} 一致性检查
+            {busy === "consistency" ? <Spinner /> : null} {t("wb.check")}
           </button>
           <button onClick={onUpdateMemory} disabled={!currentChapter || running}>
-            {busy === "memory" ? <Spinner /> : null} 更新记忆
+            {busy === "memory" ? <Spinner /> : null} {t("wb.updateMemory")}
           </button>
           <span className="spacer" />
           <label className="danger-check">
-            <input
-              type="checkbox"
-              checked={includeMemory}
-              onChange={(e) => setIncludeMemory(e.target.checked)}
-            />
-            连带记忆
+            <input type="checkbox" checked={includeMemory} onChange={(e) => setIncludeMemory(e.target.checked)} />
+            {t("wb.includeMemory")}
           </label>
           <button className="danger" onClick={onReset} disabled={!currentChapter || running}>
-            {busy === "reset" ? <Spinner /> : null} 重置本章
+            {busy === "reset" ? <Spinner /> : null} {t("wb.reset")}
           </button>
         </div>
       </div>

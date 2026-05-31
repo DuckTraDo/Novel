@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { marked } from "marked";
 import { api, ReportKind } from "../api";
+import { useT } from "../i18n";
 import { Banner } from "./common";
 
 interface Props {
@@ -9,17 +10,14 @@ interface Props {
   setCurrentChapter: (id: string) => void;
 }
 
-const KINDS: { key: ReportKind; label: string }[] = [
-  { key: "generation", label: "生成报告" },
-  { key: "consistency", label: "一致性报告" },
-  { key: "memory", label: "记忆更新报告" },
+const KINDS: { key: ReportKind; labelKey: string }[] = [
+  { key: "generation", labelKey: "rp.generation" },
+  { key: "consistency", labelKey: "rp.consistency" },
+  { key: "memory", labelKey: "rp.memory" },
 ];
 
-export default function Reports({
-  chapters,
-  currentChapter,
-  setCurrentChapter,
-}: Props) {
+export default function Reports({ chapters, currentChapter, setCurrentChapter }: Props) {
+  const t = useT();
   const [kind, setKind] = useState<ReportKind>("consistency");
   const [html, setHtml] = useState("");
   const [empty, setEmpty] = useState(false);
@@ -39,7 +37,7 @@ export default function Reports({
       }
       setEmpty(false);
       setHtml(await marked.parse(md));
-    } catch (e) {
+    } catch {
       setHtml("");
       setEmpty(true);
     }
@@ -53,11 +51,8 @@ export default function Reports({
   return (
     <div className="reports">
       <div className="reports-bar">
-        <select
-          value={currentChapter}
-          onChange={(e) => setCurrentChapter(e.target.value)}
-        >
-          <option value="">（选择章节）</option>
+        <select value={currentChapter} onChange={(e) => setCurrentChapter(e.target.value)}>
+          <option value="">{t("rp.selectChapter")}</option>
           {chapters.map((c) => (
             <option key={c} value={c}>
               {c}
@@ -71,21 +66,19 @@ export default function Reports({
               className={kind === k.key ? "tab active" : "tab"}
               onClick={() => setKind(k.key)}
             >
-              {k.label}
+              {t(k.labelKey)}
             </button>
           ))}
         </div>
         <button className="ghost" onClick={load}>
-          刷新
+          {t("rp.refresh")}
         </button>
       </div>
 
       {!currentChapter ? (
-        <Banner kind="info">请选择一个章节查看报告。</Banner>
+        <Banner kind="info">{t("rp.pickChapter")}</Banner>
       ) : empty ? (
-        <Banner kind="info">
-          暂无该报告。可在「章节工作台」运行对应操作后再来查看。
-        </Banner>
+        <Banner kind="info">{t("rp.empty")}</Banner>
       ) : (
         <div className="markdown" dangerouslySetInnerHTML={{ __html: html }} />
       )}

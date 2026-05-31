@@ -1,253 +1,188 @@
-# Novel Writing Pipeline
+<div align="center">
 
-本地大模型 + LoRA + 结构化记忆的长篇小说写作流水线。
+<img src="app/src-tauri/icons/128x128.png" width="96" alt="Sodarie Novel" />
 
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](#)
+# Sodarie Novel
+
+**本地大模型 · 结构化记忆 · 长篇小说写作台**
+
+一台「你掌舵、模型划桨」的长篇小说创作机器：你只用一句话定方向，模型一次写出整章，
+流水线负责长期记忆、连续性检查和上下文组织——越写越连贯，而不是越写越乱。
+
+[![Desktop App](https://img.shields.io/badge/Desktop-Tauri%20App-6d5efc)](#-sodarie-novel-桌面应用)
+[![Rust](https://img.shields.io/badge/Engine-Rust-DEA584?logo=rust&logoColor=white)](#)
 [![Local LLM](https://img.shields.io/badge/Local-LLM-2E7D32)](#)
 [![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-111827)](#)
-[![llama.cpp Ready](https://img.shields.io/badge/llama.cpp-Ready-6B7280)](#)
-[![LoRA Ready](https://img.shields.io/badge/LoRA-Ready-8B5CF6)](#)
-[![Hugging Face LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
+[![i18n](https://img.shields.io/badge/中文-%2F%20English-0ea5e9)](#)
+[![LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
 
-[English](./README_EN.md) | 简体中文
+[简体中文](./README.md) · [English](./README_EN.md) · [GitHub](https://github.com/DuckTraDo/Novel) · [LoRA 权重](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
 
-GitHub: [DuckTraDo/Novel](https://github.com/DuckTraDo/Novel) · LoRA: [Hugging Face release](https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora)
+</div>
 
-这个项目把长篇小说创作拆成一个可审阅、可记忆、可持续推进的循环：作者决定每章方向，模型一次性起草完整章节，pipeline 负责长期记忆、连续性检查和后续上下文组织。
+---
 
-旧版 scene-level workflow 已废弃，因为多次独立生成容易造成重复和割裂。当前推荐整章一次生成。
+## ✨ 为什么用它
 
-## Workflow
+- 🖥️ **桌面应用，开箱即用** — 装好安装包，填一个模型地址就能写，**无需 Python、无需 clone 仓库**。
+- 🧠 **结构化长期记忆** — 人物、伏笔、时间线、事件、章节摘要自动维护，专治长篇「写崩」。
+- ✍️ **一句话生成整章** — 给一句 idea，模型起草完整章节；idea 永远是最高优先级。
+- 🔍 **连续性审查** — 内置「编辑」帮你揪信息超前、设定漂移、伏笔遗漏、AI 腔。
+- 🎨 **好看又顺手** — 中 / 英双语，浅 / 深 / 暖三套主题，2026 现代界面。
+- 📂 **文件型，简单稳定** — 全是 YAML / JSON / Markdown，无数据库，可读可备份可手改。
+- 🔌 **接本地推理** — OpenAI 兼容接口，llama.cpp / vLLM 等皆可；可配 LoRA 文风。
 
-```mermaid
-flowchart TD
-    A["作者准备基础记忆文件"] --> B["输入一句 chapter idea"]
-    B --> C["生成完整 chapter.md"]
-    C --> D["作者审阅/手动修改/重新生成"]
-    D --> E["一致性检查"]
-    E --> F["更新长期记忆"]
-    F --> G["下一章"]
-```
+---
 
-## ✨ Features
+## 🖼️ 界面预览
 
-- Local-first，不依赖云端模型
-- OpenAI-compatible API，便于接入本地推理服务
-- 支持 llama.cpp server 或其他兼容服务
-- 支持 LoRA 写作风格适配
-- 一句 chapter idea 生成完整章节
-- 结构化长期记忆：人物、事件、时间线、伏笔、章节摘要
-- 章节后记忆更新
-- 完整章节一致性检查
-- 文件型 pipeline，简单稳定，无需数据库
+<div align="center">
 
-## 🖋️ LoRA Weights
+<table>
+<tr>
+<td align="center"><b>章节工作台</b></td>
+<td align="center"><b>记忆库</b></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/workbench.png" width="430" alt="章节工作台" /></td>
+<td><img src="docs/screenshots/memory.png" width="430" alt="记忆库" /></td>
+</tr>
+</table>
 
-第一版中文小说文风 LoRA 已发布到 Hugging Face：
+</div>
 
-**https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora**
+---
 
-LoRA 权重不放在 GitHub repo 中。GitHub repo 只放 pipeline 代码、文档和配置模板。
+## 🖥️ Sodarie Novel 桌面应用
 
-## 📁 Project Structure
+`app/` 是基于 **Tauri（Rust + React）** 的桌面应用。引擎已用 **Rust 原生重写**，
+终端用户只需要两样东西：
 
-```text
-pipeline/
-├── config.yaml
-├── README.md
-├── README_EN.md
-├── SECURITY_CHECKLIST.md
-│
-├── memory/
-│   ├── story_bible.yaml
-│   ├── characters.yaml
-│   ├── foreshadowing.yaml
-│   ├── relationships.json
-│   ├── timeline.jsonl
-│   ├── events.jsonl
-│   ├── chapter_summaries.jsonl
-│   └── style_bank.jsonl
-│
-├── outlines/
-│   └── book_outline.yaml
-│
-├── chapters/
-│   └── ch001/
-│       └── chapter.md
-│
-├── outputs/
-│   └── reports/
-│
-└── scripts/
-    ├── utils.py
-    ├── generate_chapter_local.py
-    ├── check_consistency.py
-    ├── update_memory_after_chapter.py
-    └── reset_chapter.py
-```
+1. 安装包 `Sodarie Novel_<版本>_x64-setup.exe`
+2. 一个 OpenAI 兼容的模型服务地址（自备本地推理服务，如 llama.cpp / vLLM）
 
-## 🚀 推荐写作流程
+首次启动会自动在用户数据目录建好项目并写入模板。
 
-### 1. 新书开始前，先编辑基础文件
+### 🚀 装好即用（终端用户）
 
-- `memory/story_bible.yaml`
-- `memory/characters.yaml`
-- `outlines/book_outline.yaml`
-- `memory/style_bank.jsonl`
-- `memory/foreshadowing.yaml` 可选
+1. 安装并打开 **Sodarie Novel**。
+2. 进入 **设置**，填写 **LLM Base URL**（须含 `http://`，多数本地服务在 `/v1` 下，例如
+   `http://127.0.0.1:18180/v1`）与模型名称。
+3. 回到 **章节工作台**，新建 `ch001` → 写一句 idea → **生成**。开写！✨
 
-### 2. 每章只写一句 chapter idea
+> 第一次用？应用内左侧「📖 使用指南」有详细中英文教程，照着走五分钟上手。
 
-```powershell
-python scripts/generate_chapter_local.py --chapter ch001 --idea "第一章：主角回到故乡，发现父亲留下的一封信，并决定调查多年前的旧事。" --target-words 4000 --overwrite
-```
+### 🧭 界面功能
 
-也可以从文件读取：
+| 区域 | 作用 |
+| --- | --- |
+| ✍️ 章节工作台 | 选章 / 新建 → 一句 idea + 目标字数 → 生成 / 重新生成 → 正文可编辑保存 → 一致性检查 / 更新记忆 / 重置 |
+| 📋 报告 | 界面内渲染生成报告、一致性报告、记忆更新报告 |
+| 🧠 记忆库 | 编辑 story bible、角色、大纲、伏笔、风格库，降低手写 YAML 门槛 |
+| ⚙️ 设置 | 项目目录、LLM 地址 / 密钥 / 模型；中英文 & 主题切换 |
+| 📖 使用指南 | 内置详细中英文操作教程 |
 
-```powershell
-python scripts/generate_chapter_local.py --chapter ch001 --idea-file inputs/ch001_idea.txt --target-words 4000 --overwrite
-```
+### 🛠️ 从源码开发 / 打包
 
-### 3. 作者检查/修改
-
-正文在：
-
-```text
-chapters/ch001/chapter.md
-```
-
-如果不满意，可以手动改，也可以重新生成。
-
-### 4. 一致性检查
-
-```powershell
-python scripts/check_consistency.py --chapter ch001
-```
-
-### 5. 更新长期记忆
-
-```powershell
-python scripts/update_memory_after_chapter.py --chapter ch001
-```
-
-### 6. 下一章同理
-
-```powershell
-python scripts/generate_chapter_local.py --chapter ch002 --idea "第二章大概发生什么。" --target-words 4000 --overwrite
-```
-
-## 🖥️ 桌面应用（推荐给不熟悉命令行的用户）
-
-`app/` 是一个 Tauri 桌面应用，把上面的命令行流程封装成图形界面，无需记参数，点按钮即可完成「生成章节 / 看改正文 / 一致性检查 / 更新记忆 / 编辑记忆与大纲」。
-
-界面只是封装，真正干活的仍是 `scripts/*.py`，命令行用法照旧可用。应用启动时会自动向上定位到本仓库根目录。
-
-### 环境要求
-
-- Node.js 18+ 与 npm
-- Rust 工具链（`rustc` / `cargo`）
-- Python 3.10+ 且已安装 `openai`、`pyyaml`（命令行版同样需要）
-- 一个本地 OpenAI 兼容推理服务（如 llama.cpp server）
-
-### 启动开发模式
+环境：Node.js 18+ 与 npm、Rust 工具链（`rustc` / `cargo`）。
 
 ```powershell
 cd app
 npm install
-npm run tauri dev
+npm run tauri dev      # 开发模式
+npm run tauri build    # 打包安装器（NSIS）
 ```
 
-### 打包成可执行程序
+---
+
+## 🔁 创作流程
+
+```mermaid
+flowchart LR
+    A["准备记忆库<br/>世界观·人物·大纲"] --> B["写一句<br/>chapter idea"]
+    B --> C["生成整章"]
+    C --> D["审阅 / 改 /<br/>重新生成"]
+    D --> E["一致性检查"]
+    E --> F["更新长期记忆"]
+    F --> B
+```
+
+> 核心心法：**idea 决定这章写什么，记忆库决定这章和前文对不对得上。**
+
+---
+
+## 🧩 记忆库都有什么
+
+| 文件 | 作用 |
+| --- | --- |
+| `memory/story_bible.yaml` | 故事圣经：世界观、主题、写作规则、禁止模式 |
+| `memory/characters.yaml` | 角色档案：状态、knows、secrets、关系、限制 |
+| `outlines/book_outline.yaml` | 全书方向、结构与章节规划 |
+| `memory/foreshadowing.yaml` | 伏笔追踪：active / resolved 双态 |
+| `memory/style_bank.jsonl` | 文风样例（每行一条 `{id, text}`），模型据此模仿笔调 |
+| `memory/events.jsonl` · `timeline.jsonl` · `chapter_summaries.jsonl` | 自动维护的事件 / 时间线 / 摘要账本 |
+| `memory/relationships.json` | 人物关系图（节点 + 边） |
+| `chapters/<id>/chapter.md` · `outputs/reports/` | 每章正文 · 各类报告 |
+
+> `events / timeline / summaries / relationships` 由「更新记忆」自动写入，一般不用手改。
+
+---
+
+## 🖋️ LoRA 文风权重
+
+第一版中文小说文风 LoRA 已发布到 Hugging Face：
+
+**<https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora>**
+
+> LoRA 权重不放进 GitHub 仓库；仓库只放代码、文档和配置模板。
+
+---
+
+## ⌨️ 命令行版（进阶 / 习惯终端的用户）
+
+桌面应用之外，`scripts/*.py` 提供等价的命令行流程（需 Python 3.10+ 与 `openai`、`pyyaml`）。
+
+<details>
+<summary>展开命令行用法</summary>
 
 ```powershell
-cd app
-npm run tauri build
+# 1. 生成一章
+python scripts/generate_chapter_local.py --chapter ch001 --idea "第一章：主角回到故乡，发现父亲留下的一封信，决定调查多年前的旧事。" --target-words 4000 --overwrite
+
+# 2. 一致性检查
+python scripts/check_consistency.py --chapter ch001
+
+# 3. 更新长期记忆
+python scripts/update_memory_after_chapter.py --chapter ch001
+
+# 4. 重置某章（默认只删正文/报告；加 --include-memory 连带过滤摘要/事件/时间线）
+python scripts/reset_chapter.py --chapter ch001
 ```
 
-### 界面功能
-
-- **章节工作台**：选章 / 新建 → 填一句 idea + 目标字数 → 生成或重新生成 → 正文可直接编辑保存 → 一致性检查 / 更新记忆 / 重置本章
-- **报告**：在界面内渲染生成报告、一致性报告、记忆更新报告
-- **记忆库**：表单式编辑 story bible、角色、大纲、伏笔、风格库等，降低手写 YAML 门槛
-- **设置**：配置 Python 路径、LLM 地址 / 密钥 / 模型；保存到仓库根目录的 `.ui-settings.json`（已被 gitignore），运行脚本时通过环境变量注入
-
-## 🧩 Core Files
-
-- `memory/story_bible.yaml`：故事圣经，包含世界观、主题、限制和写作规则
-- `memory/characters.yaml`：角色档案与人物状态
-- `memory/foreshadowing.yaml`：伏笔记录、状态和回收计划
-- `memory/events.jsonl`：事件流水账，便于后续检索和回顾
-- `memory/timeline.jsonl`：时间线记录，降低顺序错乱风险
-- `memory/chapter_summaries.jsonl`：章节摘要，帮助后续章节继承上下文
-- `memory/style_bank.jsonl`：风格样例和表达偏好
-- `outlines/book_outline.yaml`：全书方向、结构和章节规划
-- `chapters/<chapter_id>/chapter.md`：每章正文
-- `outputs/reports/`：生成报告、一致性报告、记忆更新报告
-
-## Script Reference
-
-### Generate a chapter
-
-```powershell
-python scripts/generate_chapter_local.py --chapter ch001 --idea "第一章：主角回到故乡，发现父亲留下的一封信，并决定调查多年前的旧事。" --target-words 4000 --overwrite
-```
-
-常用参数：
+`generate_chapter_local.py` 常用参数：
 
 - `--idea` / `--idea-file`：二选一
 - `--target-words`：目标中文字数，默认 4000
 - `--overwrite`：允许覆盖已有 `chapter.md`
-- `--no-context`：不读取长期记忆，只根据 idea 生成
+- `--no-context`：不读取长期记忆，只按 idea 生成
 - `--dry-run`：只构建 prompt 和报告，不调用 LLM
 
-### Check consistency
+</details>
 
-```powershell
-python scripts/check_consistency.py --chapter ch001
-```
+---
 
-### Update memory
+## 🛡️ 安全与隐私
 
-```powershell
-python scripts/update_memory_after_chapter.py --chapter ch001
-```
+面向本地写作与本地推理。公开仓库时请注意（`.gitignore` 已默认排除大部分）：
 
-### Reset a chapter
+- ❌ 不提交 `.env`、接口密钥、访问令牌等凭证
+- ❌ 不提交本地模型 / LoRA 适配器文件
+- ❌ 不提交私稿 `chapters/`、生成产物 `outputs/`、本地设置 `.ui-settings.json`
+- ❌ 不提交训练数据原文或未授权文本
 
-```powershell
-python scripts/reset_chapter.py --chapter ch001
-```
+详见 [`SECURITY_CHECKLIST.md`](./SECURITY_CHECKLIST.md)。
 
-默认只删除：
-
-- `chapters/ch001/`
-- `outputs/reports/ch001_*`
-
-如果需要同时过滤该章在长期记忆里的记录：
-
-```powershell
-python scripts/reset_chapter.py --chapter ch001 --include-memory
-```
-
-只会过滤：
-
-- `memory/chapter_summaries.jsonl`
-- `memory/events.jsonl`
-- `memory/timeline.jsonl`
-
-不会删除 story bible、人物档案、全书大纲、风格库或伏笔文件。
-
-## 🛡️ Safety / Privacy
-
-这个项目默认面向本地写作和本地推理。公开仓库时，请尤其注意：
-
-- 不要提交 `.env`
-- 不要提交接口密钥、访问令牌或其他凭证
-- 不要提交本地模型或适配器文件
-- 不要提交私稿 `chapters/`
-- 不要提交生成产物 `outputs/`
-- 不要提交训练数据原文或未授权文本
-- 当前 `.gitignore` 已默认排除常见本地模型、私稿和生成报告
+---
 
 ## 🗺️ Roadmap
 
@@ -256,15 +191,21 @@ python scripts/reset_chapter.py --chapter ch001 --include-memory
 - [x] 章节后记忆更新
 - [x] 完整章节一致性检查
 - [x] 第一版中文小说 LoRA 发布到 Hugging Face
-- [x] 桌面应用（Tauri，图形界面，见下文 `app/`）
-- [ ] 检索增强记忆
-- [ ] 多 LoRA 风格库
+- [x] 桌面应用（Tauri，Rust 引擎，中英双语 + 主题切换）
+- [ ] 检索增强记忆（RAG）
+- [ ] 多 LoRA 文风库
 - [ ] 一键导出书稿
 
-## 🤝 Contributing
+---
 
-Issues and PRs are welcome. Useful contribution areas include prompt improvements, pipeline scripts, consistency checking, and local model compatibility.
+## 🤝 贡献 & 许可
 
-## License
+欢迎 Issue / PR，尤其是 prompt 优化、流水线脚本、一致性检查、本地模型兼容性等方向。
 
-License: TBD. A proper open-source license will be added soon.
+License：TBD（即将补上正式开源许可）。
+
+<div align="center">
+
+Made by [**DuckTraDo**](https://github.com/DuckTraDo) · 用 ☕ 与本地大模型写就
+
+</div>

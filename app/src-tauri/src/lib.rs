@@ -181,6 +181,15 @@ fn config_u32(config: &serde_yaml::Value, key: &str, default: u32) -> u32 {
         .unwrap_or(default)
 }
 
+/// 把输出上限转成请求参数：0 表示不限（不发送 max_tokens，模型写到自然结束）
+fn cap_to_opt(n: u32) -> Option<u32> {
+    if n == 0 {
+        None
+    } else {
+        Some(n)
+    }
+}
+
 /// 构建运行时配置
 fn build_run_config(app: &tauri::AppHandle) -> Result<RunConfig, String> {
     let project_dir = resolve_project_dir(app);
@@ -822,7 +831,7 @@ fn do_generate_chapter(
         messages,
         temperature,
         top_p,
-        config.max_output_tokens,
+        cap_to_opt(config.max_output_tokens),
     ) {
         Ok(r) => r,
         Err(e) => {
@@ -1098,7 +1107,7 @@ fn do_check_consistency(app: &tauri::AppHandle, chapter_id: &str) -> CommandResu
         messages,
         0.4,
         top_p,
-        config.max_output_tokens,
+        cap_to_opt(config.max_output_tokens),
     ) {
         Ok(r) => r,
         Err(e) => {
@@ -1230,10 +1239,83 @@ fn parse_extraction_json(raw_output: &str) -> Result<serde_json::Value, String> 
         text = text[..=last].to_string();
     }
 
-    serde_json::from_str(&text).map_err(|e| {
-        let preview: String = raw_output.chars().take(500).collect();
-        format!("JSON解析失败: {}\n原始输出前500字:\n{}", e, preview)
-    })
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) {
+        return Ok(value);
+    }
+
+    // 容错：模型输出被 token 上限截断时，抢救已完整的部分（截到最后一个完整元素并补全括号）
+    if let Some(value) = repair_truncated_json(&text) {
+        return Ok(value);
+    }
+
+    let preview: String = raw_output.chars().take(500).collect();
+    match serde_json::from_str::<serde_json::Value>(&text) {
+        Ok(value) => Ok(value),
+        Err(e) => Err(format!("JSON解析失败: {}\n原始输出前500字:\n{}", e, preview)),
+    }
+}
+
+/// 尝试修复被截断的 JSON：截到最后一个完整元素（最后一个 } / ] 或逗号之前），
+/// 再根据未闭合的括号补全。仅按字节扫描 ASCII 结构字符，UTF-8 续字节不会被误判。
+fn repair_truncated_json(s: &str) -> Option<serde_json::Value> {
+    let bytes = s.as_bytes();
+    let mut in_str = false;
+    let mut esc = false;
+    let mut best: usize = 0; // 安全截断点（独占）
+    for (i, &b) in bytes.iter().enumerate() {
+        if in_str {
+            if esc {
+                esc = false;
+            } else if b == b'\\' {
+                esc = true;
+            } else if b == b'"' {
+                in_str = false;
+            }
+            continue;
+        }
+        match b {
+            b'"' => in_str = true,
+            b'}' | b']' => best = i + 1, // 完整容器闭合后
+            b',' => best = i,            // 逗号前（丢弃逗号及其后的残缺元素）
+            _ => {}
+        }
+    }
+    if best == 0 {
+        return None;
+    }
+
+    let mut prefix = s[..best].to_string();
+
+    // 重新计算 prefix 的未闭合括号栈
+    let mut stack: Vec<char> = Vec::new();
+    let mut in_s = false;
+    let mut e = false;
+    for &b in prefix.as_bytes() {
+        if in_s {
+            if e {
+                e = false;
+            } else if b == b'\\' {
+                e = true;
+            } else if b == b'"' {
+                in_s = false;
+            }
+            continue;
+        }
+        match b {
+            b'"' => in_s = true,
+            b'{' => stack.push('}'),
+            b'[' => stack.push(']'),
+            b'}' | b']' => {
+                stack.pop();
+            }
+            _ => {}
+        }
+    }
+    while let Some(close) = stack.pop() {
+        prefix.push(close);
+    }
+
+    serde_json::from_str(&prefix).ok()
 }
 
 /// 应用记忆更新（移植 Python 的 apply_memory_updates）
@@ -1962,6 +2044,8 @@ fn do_update_memory(app: &tauri::AppHandle, chapter_id: &str) -> CommandResult {
 
     log.push_str("[信息] 正在调用模型进行记忆抽取...\n");
 
+    // 记忆抽取必须吐出完整 JSON，绝不能被输出上限截断：
+    // 这里不发送 max_tokens，让模型写到自然结束（仅受上下文窗口约束）。
     let raw_output = match llm::call_llm(
         &config.llm_base_url,
         &config.llm_api_key,
@@ -1969,7 +2053,7 @@ fn do_update_memory(app: &tauri::AppHandle, chapter_id: &str) -> CommandResult {
         messages,
         0.3,
         top_p,
-        config.max_output_tokens,
+        None,
     ) {
         Ok(r) => r,
         Err(e) => {
@@ -2316,10 +2400,26 @@ async fn reset_chapter(
 // 应用入口
 // ============================================================
 
+#[tauri::command]
+fn open_url(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            // 运行时显式设置窗口/任务栏图标，确保 dev 与正式版都显示新 logo
+            // include_image! 在编译期嵌入；图标文件变化会强制重新编译。
+            if let Some(win) = app.get_webview_window("main") {
+                let _ = win.set_icon(tauri::include_image!("icons/icon.png"));
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_pipeline_root,
             list_chapters,
@@ -2334,6 +2434,7 @@ pub fn run() {
             check_consistency,
             update_memory,
             reset_chapter,
+            open_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -2478,6 +2579,21 @@ mod tests {
     }
 
     #[test]
+    fn repair_recovers_truncated_extraction_json() {
+        // 模拟模型在 events 第二个元素中途被 token 上限截断
+        let truncated = "{\n  \"chapter_summary\": \"测试摘要\",\n  \"events\": [\n    {\"event_id\": \"ch001_evt001\", \"description\": \"完整事件\"},\n    {\"event_id\": \"ch001_evt002\",\n     \"chapte";
+        // 严格解析必然失败
+        assert!(serde_json::from_str::<serde_json::Value>(truncated).is_err());
+        // 抢救后应能解析，且保住摘要与已完整的首个事件
+        let v = parse_extraction_json(truncated).expect("应能抢救截断的 JSON");
+        assert_eq!(v["chapter_summary"], "测试摘要");
+        let events = v["events"].as_array().unwrap();
+        assert!(!events.is_empty());
+        assert_eq!(events[0]["event_id"], "ch001_evt001");
+        assert_eq!(events[0]["description"], "完整事件");
+    }
+
+    #[test]
     fn belongs_to_chapter_matches_id_and_event_prefix() {
         assert!(belongs_to_chapter(&json!({"chapter_id": "ch002"}), "ch002"));
         assert!(belongs_to_chapter(&json!({"event_id": "ch002_evt003"}), "ch002"));
@@ -2509,8 +2625,37 @@ mod tests {
             role: "user".into(),
             content: "hi".into(),
         }];
-        let out = llm::call_llm(&base, "k", "m", msgs, 0.7, 0.9, 50).unwrap();
+        let out = llm::call_llm(&base, "k", "m", msgs, 0.7, 0.9, Some(50)).unwrap();
         assert_eq!(out, "测试输出");
+        let _ = handle.join();
+    }
+
+    #[test]
+    fn llm_call_normalizes_missing_scheme() {
+        // 用户漏写 http:// 时应自动补全，而不是报 builder error
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let handle = std::thread::spawn(move || {
+            if let Ok((mut stream, _)) = listener.accept() {
+                let mut buf = [0u8; 4096];
+                let _ = stream.read(&mut buf);
+                let body = r#"{"choices":[{"message":{"content":"ok"}}]}"#;
+                let resp = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.as_bytes().len(),
+                    body
+                );
+                let _ = stream.write_all(resp.as_bytes());
+            }
+        });
+        // 注意：没有 http:// 前缀
+        let base = format!("127.0.0.1:{}", port);
+        let msgs = vec![llm::ChatMessage {
+            role: "user".into(),
+            content: "hi".into(),
+        }];
+        let out = llm::call_llm(&base, "k", "m", msgs, 0.7, 0.9, Some(50)).unwrap();
+        assert_eq!(out, "ok");
         let _ = handle.join();
     }
 }
