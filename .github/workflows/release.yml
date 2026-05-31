@@ -1,17 +1,26 @@
 name: Release
 
-# 触发方式：
-#   1) 推送形如 v0.1.0 的 tag    git tag v0.1.0 && git push origin v0.1.0
-#   2) 在 GitHub 网页 Actions 里手动 Run workflow（workflow_dispatch）
-# 产物会作为「草稿 Release」上传，确认无误后在 Releases 页点 Publish 即可。
+# 自动打包并发布到 GitHub Releases：
+#   • 每次 push 到 main（且改动涉及 app/）  → 自动更新「latest」滚动预发布
+#   • 推送形如 v0.1.0 的 tag                → 出对应版本的「正式版草稿」，确认后手动 Publish
+#   • Actions 页手动 Run workflow            → 同 latest
 on:
   push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/release.yml"
     tags:
       - "v*"
   workflow_dispatch:
 
 permissions:
   contents: write
+
+# 连续推送时取消上一次未完成的构建，避免堆积
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -66,8 +75,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: app
-          tagName: v__VERSION__
-          releaseName: "Sodarie Novel v__VERSION__"
+          # tag 触发 → 用该版本号出正式版草稿；其余（push main / 手动）→ 滚动更新 latest 预发布
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
+          releaseName: ${{ startsWith(github.ref, 'refs/tags/') && format('Sodarie Novel {0}', github.ref_name) || 'Sodarie Novel (latest)' }}
+          releaseDraft: ${{ startsWith(github.ref, 'refs/tags/') }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
           releaseBody: |
             Sodarie Novel —— 本地大模型长篇小说写作台。
 
@@ -78,6 +90,4 @@ jobs:
 
             首次使用：打开后到「设置」填入本地 OpenAI 兼容服务地址（含 http://，多数在 /v1 下），即可开始。
             注：安装包未做代码签名，首次打开可能需在系统中允许运行。
-          releaseDraft: true
-          prerelease: false
           args: ${{ matrix.args }}
