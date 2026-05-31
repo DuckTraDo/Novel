@@ -136,6 +136,41 @@ python scripts/update_memory_after_chapter.py --chapter ch001
 python scripts/generate_chapter_local.py --chapter ch002 --idea "第二章大概发生什么。" --target-words 4000 --overwrite
 ```
 
+## 🖥️ 桌面应用（推荐给不熟悉命令行的用户）
+
+`app/` 是一个 Tauri 桌面应用，把上面的命令行流程封装成图形界面，无需记参数，点按钮即可完成「生成章节 / 看改正文 / 一致性检查 / 更新记忆 / 编辑记忆与大纲」。
+
+界面只是封装，真正干活的仍是 `scripts/*.py`，命令行用法照旧可用。应用启动时会自动向上定位到本仓库根目录。
+
+### 环境要求
+
+- Node.js 18+ 与 npm
+- Rust 工具链（`rustc` / `cargo`）
+- Python 3.10+ 且已安装 `openai`、`pyyaml`（命令行版同样需要）
+- 一个本地 OpenAI 兼容推理服务（如 llama.cpp server）
+
+### 启动开发模式
+
+```powershell
+cd app
+npm install
+npm run tauri dev
+```
+
+### 打包成可执行程序
+
+```powershell
+cd app
+npm run tauri build
+```
+
+### 界面功能
+
+- **章节工作台**：选章 / 新建 → 填一句 idea + 目标字数 → 生成或重新生成 → 正文可直接编辑保存 → 一致性检查 / 更新记忆 / 重置本章
+- **报告**：在界面内渲染生成报告、一致性报告、记忆更新报告
+- **记忆库**：表单式编辑 story bible、角色、大纲、伏笔、风格库等，降低手写 YAML 门槛
+- **设置**：配置 Python 路径、LLM 地址 / 密钥 / 模型；保存到仓库根目录的 `.ui-settings.json`（已被 gitignore），运行脚本时通过环境变量注入
+
 ## 🧩 Core Files
 
 - `memory/story_bible.yaml`：故事圣经，包含世界观、主题、限制和写作规则
@@ -221,7 +256,7 @@ python scripts/reset_chapter.py --chapter ch001 --include-memory
 - [x] 章节后记忆更新
 - [x] 完整章节一致性检查
 - [x] 第一版中文小说 LoRA 发布到 Hugging Face
-- [ ] Web UI
+- [x] 桌面应用（Tauri，图形界面，见下文 `app/`）
 - [ ] 检索增强记忆
 - [ ] 多 LoRA 风格库
 - [ ] 一键导出书稿
