@@ -32,6 +32,8 @@
 - 📂 **文件型，简单稳定** — 全是 YAML / JSON / Markdown，无数据库，可读可备份可手改。
 - 🔌 **接本地推理** — OpenAI 兼容接口，llama.cpp / vLLM 等皆可；可配 LoRA 文风。
 
+> 📣 项目持续维护中,欢迎到 [Issues](https://github.com/DuckTraDo/Novel/issues) 反馈,我会根据反馈**及时修复和更新**。
+
 ---
 
 ## 🖼️ 界面预览
@@ -198,11 +200,15 @@ python scripts/reset_chapter.py --chapter ch001
 
 ---
 
-## 🤝 贡献 & 许可
+## 🤝 反馈 · 贡献 · 许可
 
-欢迎 Issue / PR，尤其是 prompt 优化、流水线脚本、一致性检查、本地模型兼容性等方向。
+> 📣 **持续维护中。** 用着有问题、有想法,欢迎在 [Issues](https://github.com/DuckTraDo/Novel/issues) 提反馈——我会根据大家的反馈**及时修复和更新**。
 
-License：TBD（即将补上正式开源许可）。
+也欢迎直接发 PR,尤其是 prompt 优化、流水线脚本、一致性检查、本地模型兼容性等方向。
+
+LoRA 文风权重:<https://huggingface.co/yuxinlu1/qwen3-6-27b-chinese-fiction-lora>
+
+License:TBD(即将补上正式开源许可)。
 
 <div align="center">
 
