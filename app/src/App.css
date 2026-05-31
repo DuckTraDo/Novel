@@ -725,6 +725,26 @@ button.ghost {
 .settings .panel {
   max-width: 640px;
 }
+.check-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 6px 0 16px;
+  cursor: pointer;
+}
+.check-row input {
+  width: auto;
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+.check-text {
+  display: flex;
+  flex-direction: column;
+}
+.check-title {
+  font-size: 13px;
+  font-weight: 600;
+}
 .muted {
   color: var(--muted);
 }

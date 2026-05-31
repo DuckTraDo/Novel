@@ -29,6 +29,8 @@ pub struct Settings {
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,
     pub max_output_tokens: Option<u32>,
+    // 关闭模型思考（Qwen3 等思考模型）。None/true = 关闭思考（给 prompt 追加 /no_think）
+    pub disable_thinking: Option<bool>,
 }
 
 impl Default for Settings {
@@ -41,7 +43,22 @@ impl Default for Settings {
             temperature: None,
             top_p: None,
             max_output_tokens: None,
+            disable_thinking: None,
         }
+    }
+}
+
+/// 是否关闭思考：默认开启关闭（None 视为 true），除非用户显式设为 false。
+fn thinking_disabled(settings: &Settings) -> bool {
+    settings.disable_thinking != Some(false)
+}
+
+/// 需要时给 user prompt 追加 Qwen3 的 /no_think 软开关，避免思考吃掉输出额度。
+fn apply_no_think(prompt: String, settings: &Settings) -> String {
+    if thinking_disabled(settings) {
+        format!("{}\n\n/no_think", prompt)
+    } else {
+        prompt
     }
 }
 
@@ -51,7 +68,7 @@ struct RunConfig {
     llm_base_url: String,
     llm_api_key: String,
     model_name: String,
-    max_output_tokens: u32,
+    max_output_tokens: Option<u32>,
 }
 
 // ============================================================
@@ -173,23 +190,6 @@ fn config_string(config: &serde_yaml::Value, key: &str, default: &str) -> String
         .to_string()
 }
 
-fn config_u32(config: &serde_yaml::Value, key: &str, default: u32) -> u32 {
-    config
-        .get(key)
-        .and_then(|v| v.as_u64())
-        .map(|n| n as u32)
-        .unwrap_or(default)
-}
-
-/// 把输出上限转成请求参数：0 表示不限（不发送 max_tokens，模型写到自然结束）
-fn cap_to_opt(n: u32) -> Option<u32> {
-    if n == 0 {
-        None
-    } else {
-        Some(n)
-    }
-}
-
 /// 构建运行时配置
 fn build_run_config(app: &tauri::AppHandle) -> Result<RunConfig, String> {
     let project_dir = resolve_project_dir(app);
@@ -203,9 +203,12 @@ fn build_run_config(app: &tauri::AppHandle) -> Result<RunConfig, String> {
         settings.llm_model.trim().to_string()
     };
 
-    let max_output_tokens = settings
-        .max_output_tokens
-        .unwrap_or_else(|| config_u32(&config, "max_output_tokens", 4000));
+    // 输出上限：默认不限（None）——只受模型上下文窗口约束。
+    // 仅当用户在设置里显式填了正数时才作为上限；填 0 同样视为不限。
+    let max_output_tokens = match settings.max_output_tokens {
+        Some(n) if n > 0 => Some(n),
+        _ => None,
+    };
 
     Ok(RunConfig {
         project_dir,
@@ -930,7 +933,7 @@ fn do_generate_chapter(
     log.push_str(&format!("[信息] 使用长期记忆: {}\n", use_context));
     log.push_str(&format!("[信息] prompt token 估算: ~{}\n", context_tokens));
 
-    let messages = sys_user_messages(SYSTEM_PROMPT, &user_prompt);
+    let messages = sys_user_messages(SYSTEM_PROMPT, &apply_no_think(user_prompt.clone(), &settings));
 
     let temperature = settings.temperature.unwrap_or(0.8);
     let top_p = settings.top_p.unwrap_or(0.9);
@@ -944,7 +947,7 @@ fn do_generate_chapter(
         messages,
         temperature,
         top_p,
-        cap_to_opt(config.max_output_tokens),
+        config.max_output_tokens,
     ) {
         Ok(r) => r,
         Err(e) => {
@@ -1206,7 +1209,7 @@ fn do_check_consistency(app: &tauri::AppHandle, chapter_id: &str) -> CommandResu
 
     let messages = sys_user_messages(
         "你是一位专业的小说编辑，专注于连续性审查。请用中文输出报告。",
-        &prompt,
+        &apply_no_think(prompt.clone(), &settings),
     );
 
     let top_p = settings.top_p.unwrap_or(0.9);
@@ -1220,7 +1223,7 @@ fn do_check_consistency(app: &tauri::AppHandle, chapter_id: &str) -> CommandResu
         messages,
         0.4,
         top_p,
-        cap_to_opt(config.max_output_tokens),
+        config.max_output_tokens,
     ) {
         Ok(r) => r,
         Err(e) => {
@@ -2150,7 +2153,7 @@ fn do_update_memory(app: &tauri::AppHandle, chapter_id: &str) -> CommandResult {
 
     let messages = sys_user_messages(
         "你只输出严格合法的JSON，不输出任何其他文本。",
-        &prompt,
+        &apply_no_think(prompt.clone(), &settings),
     );
 
     let top_p = settings.top_p.unwrap_or(0.85);
@@ -2611,7 +2614,7 @@ mod tests {
             llm_base_url: "x".into(),
             llm_api_key: "x".into(),
             model_name: "test-model".into(),
-            max_output_tokens: 100,
+            max_output_tokens: Some(100),
         };
         let idea = "主角回到故乡，发现父亲留下的一封信，决定调查旧事。";
         write_generation_report(

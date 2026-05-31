@@ -32,7 +32,11 @@ struct ChatChoice {
 
 #[derive(Deserialize)]
 struct ChatMessageContent {
-    content: String,
+    // 有些「思考模型」会返回 content: null 或空串，把内容放进 reasoning_content
+    #[serde(default)]
+    content: Option<String>,
+    #[serde(default)]
+    reasoning_content: Option<String>,
 }
 
 /// 调用 OpenAI 兼容的 chat/completions 接口
@@ -110,11 +114,25 @@ pub fn call_llm(
         .json()
         .map_err(|e| format!("解析模型响应 JSON 失败: {}", e))?;
 
-    chat_resp
-        .choices
-        .first()
-        .map(|c| c.message.content.clone())
-        .ok_or_else(|| "模型返回的 choices 为空，没有生成内容。".to_string())
+    let msg = match chat_resp.choices.first() {
+        Some(c) => &c.message,
+        None => return Err("模型返回的 choices 为空，没有生成内容。".to_string()),
+    };
+    let content = msg.content.clone().unwrap_or_default();
+    if !content.trim().is_empty() {
+        return Ok(content);
+    }
+    // content 为空：若只有思考内容，说明是「思考模型」把输出额度用在了 reasoning 上
+    if msg
+        .reasoning_content
+        .as_ref()
+        .map(|r| !r.trim().is_empty())
+        .unwrap_or(false)
+    {
+        return Err("模型只返回了思考内容(reasoning)、正文为空。这通常是「思考模型」把输出额度用在了思考上。\
+请在「设置」开启『关闭思考』，或增大输出上限 / 换用非思考模型。".to_string());
+    }
+    Err("模型返回了空内容。".to_string())
 }
 
 #[cfg(test)]

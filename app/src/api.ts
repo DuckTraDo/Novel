@@ -10,6 +10,7 @@ export interface Settings {
   llm_base_url: string;
   llm_api_key: string;
   llm_model: string;
+  disable_thinking?: boolean;
 }
 
 export type ReportKind = "generation" | "consistency" | "memory";

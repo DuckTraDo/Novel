@@ -10,6 +10,7 @@ export default function SettingsPanel({ root }: { root: string }) {
     llm_base_url: "http://127.0.0.1:18180/v1",
     llm_api_key: "local",
     llm_model: "",
+    disable_thinking: true,
   });
   const [busy, setBusy] = useState(false);
   const [banner, setBanner] = useState<{ kind: "ok" | "err" | "info"; msg: string } | null>(null);
@@ -67,6 +68,18 @@ export default function SettingsPanel({ root }: { root: string }) {
         <Field label={t("st.model")} hint={t("st.modelHint")}>
           <input value={settings.llm_model} onChange={(e) => update("llm_model", e.target.value)} />
         </Field>
+
+        <label className="check-row">
+          <input
+            type="checkbox"
+            checked={settings.disable_thinking !== false}
+            onChange={(e) => update("disable_thinking", e.target.checked)}
+          />
+          <span className="check-text">
+            <span className="check-title">{t("st.disableThinking")}</span>
+            <span className="field-hint">{t("st.disableThinkingHint")}</span>
+          </span>
+        </label>
 
         <div className="actions">
           <button className="primary" onClick={onSave} disabled={busy}>
