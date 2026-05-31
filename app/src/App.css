@@ -425,6 +425,32 @@ textarea.code {
   accent-color: var(--accent);
 }
 
+/* ---------- 叙事控制折叠区 ---------- */
+.narrative {
+  margin: 2px 0 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 4px 14px;
+}
+.narrative > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 8px 0;
+  list-style: none;
+}
+.narrative > summary::before {
+  content: "▸ ";
+}
+.narrative[open] > summary {
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.narrative[open] > summary::before {
+  content: "▾ ";
+}
+
 /* ---------- 按钮 ---------- */
 button {
   font-family: inherit;

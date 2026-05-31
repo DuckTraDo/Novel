@@ -547,6 +547,7 @@ fn build_user_prompt(
     idea: &str,
     target_words: u32,
     sections: &std::collections::HashMap<String, String>,
+    form_block: &str,
 ) -> String {
     let get = |k: &str| sections.get(k).map(|s| s.as_str()).unwrap_or("（未提供）");
     format!(
@@ -585,6 +586,7 @@ fn build_user_prompt(
 ## Style References
 {style}
 
+{form_block}
 ## Hard Rules For This Chapter
 - 只写本章正文
 - 不要写章节分析
@@ -603,7 +605,102 @@ fn build_user_prompt(
         timeline = get("Timeline"),
         foreshadowing = get("Active Foreshadowing"),
         style = get("Style References"),
+        form_block = form_block,
     )
+}
+
+/// 把 POV 预设展开成英文指令；并组装「形式 / 叙事控制」英文区块。
+/// 经验:形式(POV/规则)用英文表述更能贴合模型 CoT，内容(idea/记忆)保持中文。
+fn build_form_block(pov: &str, directives: &[String]) -> String {
+    let pov = pov.trim();
+    let pov_line = if pov.is_empty() {
+        "Follow the story's established/default point of view.".to_string()
+    } else if let Some(rest) = pov.strip_prefix("objective") {
+        let _ = rest;
+        "Objective / observer POV: an invisible external observer (camera & microphone). \
+Describe ONLY what is outwardly visible and audible. Do NOT state any character's thoughts, \
+feelings, intentions, memories, or unstated knowledge — reveal interior states only through \
+visible action, speech, and physical detail."
+            .to_string()
+    } else if let Some(c) = pov.strip_prefix("limited:").or_else(|| pov.strip_prefix("limited")) {
+        let who = c.trim_start_matches(':').trim();
+        if who.is_empty() {
+            "Close third-person limited. Interiority is allowed ONLY for the single POV character; \
+other characters are observed from outside.".to_string()
+        } else {
+            format!(
+                "Close third-person limited on 「{who}」. Interiority is allowed ONLY for 「{who}」; \
+all other characters are observed strictly from the outside.",
+                who = who
+            )
+        }
+    } else if let Some(c) = pov.strip_prefix("first:").or_else(|| pov.strip_prefix("first")) {
+        let who = c.trim_start_matches(':').trim();
+        if who.is_empty() {
+            "First-person narration by the POV character.".to_string()
+        } else {
+            format!("First-person narration by 「{who}」.", who = who)
+        }
+    } else if pov.starts_with("omniscient") {
+        "Omniscient narration (use sparingly; avoid head-hopping within a single scene)."
+            .to_string()
+    } else {
+        // 自由描述,原样作为 POV 指令
+        pov.to_string()
+    };
+
+    let directives_text = if directives.is_empty() {
+        "（none specified — rely on the Story Bible's tone）".to_string()
+    } else {
+        directives
+            .iter()
+            .map(|d| format!("- {}", d.trim()))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+
+    format!(
+        r#"## Form & Narrative Control (FORM — follow strictly; this overrides generic writing habits)
+
+### Point of View
+{pov_line}
+
+### Narrative Directives
+{directives_text}
+
+### Formal Rules
+- Honor the Point of View above without exception.
+- Items flagged with `dramatize: true` (in foreshadowing / outline) MUST be rendered as a concrete in-scene beat experienced by the POV character (e.g. 「王二注意到……」), NOT summarized or delivered as authorial exposition.
+- Resolve every action to an explicitly named character using the Characters list. The idea / outline / summaries may use loose pronouns; a parenthetical such as 「他(王二)」 is AUTHORITATIVE — the name in parentheses is the true referent. Never swap who performs an action with who receives it.
+
+"#,
+        pov_line = pov_line,
+        directives_text = directives_text,
+    )
+}
+
+/// 读取 story_bible.yaml 的书级叙事默认：narrative_defaults: { pov, directives: [...] }
+fn read_narrative_defaults(project_dir: &Path) -> (String, Vec<String>) {
+    let sb = load_yaml(&project_dir.join("memory").join("story_bible.yaml"));
+    let nd = match sb.get("narrative_defaults") {
+        Some(v) => v,
+        None => return (String::new(), Vec::new()),
+    };
+    let pov = nd
+        .get("pov")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let directives = nd
+        .get("directives")
+        .and_then(|v| v.as_sequence())
+        .map(|seq| {
+            seq.iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    (pov, directives)
 }
 
 /// 从 idea 文本中提取关键词（移植 Python 的 idea_terms）
@@ -782,6 +879,8 @@ fn do_generate_chapter(
     target_words: u32,
     use_context: bool,
     overwrite: bool,
+    pov: &str,
+    narrative: &str,
 ) -> CommandResult {
     let config = match build_run_config(app) {
         Ok(c) => c,
@@ -802,8 +901,22 @@ fn do_generate_chapter(
         };
     }
 
+    // 叙事控制：章级输入优先，回退到 story_bible.narrative_defaults（书级默认）
+    let (default_pov, default_directives) = read_narrative_defaults(&config.project_dir);
+    let effective_pov = if pov.trim().is_empty() { default_pov } else { pov.trim().to_string() };
+    let effective_directives: Vec<String> = if narrative.trim().is_empty() {
+        default_directives
+    } else {
+        narrative
+            .split(|c| c == ',' || c == '，' || c == '\n')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect()
+    };
+    let form_block = build_form_block(&effective_pov, &effective_directives);
+
     let mem = build_memory_sections(&config.project_dir, use_context);
-    let user_prompt = build_user_prompt(chapter_id, idea, target_words, &mem.sections);
+    let user_prompt = build_user_prompt(chapter_id, idea, target_words, &mem.sections, &form_block);
     let context_tokens = simple_token_estimate(&user_prompt);
     let conflict_warnings = if use_context {
         detect_potential_conflicts(idea, &mem.conflict_sources)
@@ -2344,7 +2457,11 @@ async fn generate_chapter(
     target_words: u32,
     use_context: bool,
     overwrite: bool,
+    pov: Option<String>,
+    narrative: Option<String>,
 ) -> Result<CommandResult, String> {
+    let pov = pov.unwrap_or_default();
+    let narrative = narrative.unwrap_or_default();
     tauri::async_runtime::spawn_blocking(move || {
         do_generate_chapter(
             &app,
@@ -2353,6 +2470,8 @@ async fn generate_chapter(
             target_words,
             use_context,
             overwrite,
+            &pov,
+            &narrative,
         )
     })
     .await

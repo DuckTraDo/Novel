@@ -42,7 +42,9 @@ export const api = {
     idea: string,
     targetWords: number,
     useContext: boolean,
-    overwrite: boolean
+    overwrite: boolean,
+    pov: string,
+    narrative: string
   ) =>
     invoke<CommandResult>("generate_chapter", {
       chapterId,
@@ -50,6 +52,8 @@ export const api = {
       targetWords,
       useContext,
       overwrite,
+      pov,
+      narrative,
     }),
 
   checkConsistency: (chapterId: string) =>

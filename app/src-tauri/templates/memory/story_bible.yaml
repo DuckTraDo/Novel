@@ -6,6 +6,15 @@ title: "桥下的人"
 genre: "现实主义 / 家庭 / 底层命运 / 荒诞黑色幽默"
 tone: "冷静、朴素、克制，带一点荒诞和苦涩的幽默"
 
+# 叙事控制·书级默认（可选）。生成时可在「章节工作台」按章覆盖。
+# 经验：形式/叙事规则用英文表述更贴合模型；内容仍用中文。
+# pov 取值：limited:<角色> / objective(隐形旁观，只写可见) / first:<角色> / omniscient
+narrative_defaults:
+  pov: "limited:王二"
+  directives:
+    - "Forensic Minimalism"
+    - "Diegetic Observation only (no authorial summary of feelings)"
+
 world_rules:
   - "故事发生在中国北方一个衰败的小县城，时间大约是二十世纪九十年代末到两千年初。"
   - "县城里有旧桥、肉铺、河堤、废弃电影院、国营厂宿舍、菜市场和小酒馆。"

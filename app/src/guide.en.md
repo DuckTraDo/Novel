@@ -169,6 +169,19 @@ The adjacent **☑ Incl. memory** decides whether to also wipe **this chapter's 
 
 ---
 
+## 🎬 Narrative control (POV + directives) — tame "omniscient / POV drift"
+
+Models tend to go omniscient, drift POV, and summarize beats that should be *shown*. Use this to control it precisely:
+
+- **Where to set**: expand "Narrative control (optional)" in the Workbench for the current chapter; or set **book-wide defaults** in 🧠 Memory → Story Bible under `narrative_defaults` (chapter overrides book).
+- **Point of view**:
+  - **Follow book default** / **Third-person limited** (fill "POV character"; only they have interiority, others observed from outside) / **Objective** (invisible observer — only what is visible/audible, no one's inner thoughts) / **First person** / **Omniscient** (not recommended).
+  - 👉 For a chapter that needs an *invisible third-party observer describing only what's visible*, pick **Objective**.
+- **Narrative directives**: English, comma-separated "form" tags, e.g. `Forensic Minimalism`, `Surveillance Lens & Diegetic Observation`, `Cinematic Spatial Reveal with Deductive Voice`.
+  - Tip: **form directives in English** fit the model's chain-of-thought best; **content (idea/memory) stays Chinese** — the prompt is already organized this way.
+- **Make foreshadowing *dramatized***: add `dramatize: true` to a `foreshadowing` entry and the model renders it as a **concrete in-scene beat experienced by the POV character** (e.g. "Wang Er notices the blood-donation receipt in his father's wallet"), not a one-line summary.
+- **Referent disambiguation**: pronouns in the outline/summary often confuse who-does-what-to-whom; annotate the true referent in parentheses, e.g. `he(Wang Er) notices…`, and the model treats the parenthetical as authoritative — it won't swap agent and recipient. Prefer explicit names in summaries.
+
 ## 📋 Reports
 
 The **📋 Reports** tab shows three reports per chapter:

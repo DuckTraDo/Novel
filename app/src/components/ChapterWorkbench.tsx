@@ -26,6 +26,18 @@ export default function ChapterWorkbench({
   const [overwrite, setOverwrite] = useState(true);
   const [includeMemory, setIncludeMemory] = useState(false);
 
+  // 叙事控制（可选）
+  const [povMode, setPovMode] = useState("");
+  const [povChar, setPovChar] = useState("");
+  const [narrative, setNarrative] = useState("");
+
+  function buildPov(): string {
+    if (povMode === "limited" || povMode === "first") {
+      return povChar.trim() ? `${povMode}:${povChar.trim()}` : povMode;
+    }
+    return povMode; // "" | "objective" | "omniscient"
+  }
+
   const [content, setContent] = useState("");
   const [dirty, setDirty] = useState(false);
 
@@ -80,7 +92,15 @@ export default function ChapterWorkbench({
     setBusy("generate");
     setBanner({ kind: "info", msg: t("wb.generating") });
     try {
-      const res = await api.generateChapter(id, idea.trim(), targetWords, useContext, overwrite);
+      const res = await api.generateChapter(
+        id,
+        idea.trim(),
+        targetWords,
+        useContext,
+        overwrite,
+        buildPov(),
+        narrative.trim()
+      );
       handleResult(res, t("wb.genOk", { id }));
       if (res.success) {
         await refreshChapters();
@@ -218,6 +238,35 @@ export default function ChapterWorkbench({
             </label>
           </div>
         </div>
+
+        <details className="narrative">
+          <summary>{t("wb.narrativeSection")}</summary>
+          <div className="row">
+            <Field label={t("wb.pov")}>
+              <select value={povMode} onChange={(e) => setPovMode(e.target.value)}>
+                <option value="">{t("wb.povFollow")}</option>
+                <option value="limited">{t("wb.povLimited")}</option>
+                <option value="objective">{t("wb.povObjective")}</option>
+                <option value="first">{t("wb.povFirst")}</option>
+                <option value="omniscient">{t("wb.povOmniscient")}</option>
+              </select>
+            </Field>
+            <Field label={t("wb.povCharacter")} hint={t("wb.povCharacterHint")}>
+              <input
+                value={povChar}
+                disabled={povMode !== "limited" && povMode !== "first"}
+                onChange={(e) => setPovChar(e.target.value)}
+              />
+            </Field>
+          </div>
+          <Field label={t("wb.narrative")} hint={t("wb.narrativeHint")}>
+            <input
+              value={narrative}
+              placeholder={t("wb.narrativePlaceholder")}
+              onChange={(e) => setNarrative(e.target.value)}
+            />
+          </Field>
+        </details>
 
         <div className="actions">
           <button className="primary" onClick={onGenerate} disabled={running}>
