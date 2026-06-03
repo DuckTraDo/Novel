@@ -14,6 +14,7 @@ memory, continuity checks and context — so the book gets *more* consistent as 
 [![Rust](https://img.shields.io/badge/Engine-Rust-DEA584?logo=rust&logoColor=white)](#)
 [![Local LLM](https://img.shields.io/badge/Local-LLM-2E7D32)](#)
 [![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-111827)](#)
+[![Subscription LLM](https://img.shields.io/badge/Claude%20Code%20%2F%20Codex-subscription-8b5cf6)](#-three-ways-to-connect-an-llm)
 [![i18n](https://img.shields.io/badge/中文-%2F%20English-0ea5e9)](#)
 [![LoRA](https://img.shields.io/badge/Hugging%20Face-LoRA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/yuxinlu1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e)](./LICENSE)
@@ -33,6 +34,7 @@ memory, continuity checks and context — so the book gets *more* consistent as 
 - 🎨 **Pretty and pleasant** — Chinese / English, light / dark / warm themes, a 2026-style UI.
 - 📂 **File-based, simple & stable** — plain YAML / JSON / Markdown, no database; readable, backup-able, hand-editable.
 - 🔌 **Bring your own local inference** — OpenAI-compatible endpoint (llama.cpp / vLLM…); optional LoRA style.
+- 💳 **Three ways to connect an LLM** — an OpenAI-compatible API, or write straight off your **Claude Code / Codex subscription** (drives the official CLI you're already signed into via your Pro/Max or ChatGPT quota — no extra API-key spend).
 
 > 📣 Actively maintained — open an [Issue](https://github.com/DuckTraDo/Novel/issues) with feedback and I'll **fix / update promptly**.
 
@@ -63,7 +65,7 @@ memory, continuity checks and context — so the book gets *more* consistent as 
 so end users only need two things:
 
 1. The installer `Sodarie Novel_<version>_x64-setup.exe` (or `.dmg` / `.AppImage`)
-2. An OpenAI-compatible model endpoint (your own local inference server, e.g. llama.cpp / vLLM)
+2. Something that can write — pick one: an OpenAI-compatible endpoint (your own local inference server, e.g. llama.cpp / vLLM), or the **Claude Code / Codex CLI** you're already signed into (see "Three ways to connect an LLM" below)
 
 On first launch it auto-creates a project in your user data directory and seeds the templates.
 
@@ -72,10 +74,24 @@ On first launch it auto-creates a project in your user data directory and seeds 
 Download the installer for your platform from [**Releases**](https://github.com/DuckTraDo/Novel/releases): Windows `*-setup.exe` · macOS `*.dmg` (arm64 / x64) · Linux `*.AppImage` / `*.deb`.
 
 1. Install and open **Sodarie Novel**.
-2. Go to **Settings**, set the **LLM Base URL** (must include `http://`; most local servers live under `/v1`, e.g. `http://127.0.0.1:18180/v1`) and the model name.
+2. Go to **Settings** and pick an **LLM route**:
+   - **API (local / OpenAI-compatible)**: set the **LLM Base URL** (must include `http://`; most local servers live under `/v1`, e.g. `http://127.0.0.1:18180/v1`) and the model name.
+   - **Claude Code / Codex subscription**: set a model name (leave empty for the subscription default); no Base URL / API Key needed.
 3. Back to **Workbench**, create `ch001` → write a one-line idea → **Generate**. Start writing! ✨
 
 > New here? The in-app **📖 Guide** (left tab) has a detailed bilingual tutorial.
+
+### 🔌 Three ways to connect an LLM
+
+Pick one under **Settings → LLM route**:
+
+| Route | How to connect | Who it's for |
+| --- | --- | --- |
+| **API (local / OpenAI-compatible)** | Set the model endpoint + model name (API Key optional) | Your own local inference (llama.cpp / vLLM) or a pay-as-you-go API |
+| **Claude Code subscription** | Install [Claude Code](https://www.npmjs.com/package/@anthropic-ai/claude-code) and sign in with a Pro/Max account (run `claude` in a terminal to log in) | Anyone with a Claude Pro/Max subscription |
+| **Codex subscription (ChatGPT)** | Install the [Codex CLI](https://www.npmjs.com/package/@openai/codex) and sign in with ChatGPT (run `codex login`) | Anyone with a ChatGPT Plus/Pro subscription |
+
+> The subscription routes call the official CLI (`claude` / `codex`) you're **already signed into** as a subprocess, using your **Pro/Max or ChatGPT quota — no extra API-key spend**; the API Key field is ignored and subscription credentials are forced. The client machine must have the matching CLI installed and logged in — if not, you get a clear error with guidance. Sampling parameters (temperature / top_p, etc.) are managed by the CLI on these routes and can't be tuned.
 
 ### 🧭 What the app does
 
@@ -84,7 +100,7 @@ Download the installer for your platform from [**Releases**](https://github.com/
 | ✍️ Workbench | Select / new chapter → idea + target length → generate / regenerate → edit & save text → consistency check / update memory / reset |
 | 📋 Reports | In-app rendering of generation / consistency / memory-update reports |
 | 🧠 Memory | Edit story bible, characters, outline, foreshadowing, style bank — without hand-writing raw YAML |
-| ⚙️ Settings | Project directory, LLM URL / key / model; language & theme switch |
+| ⚙️ Settings | Project directory, LLM route (API / Claude Code subscription / Codex subscription), URL / key / model; language & theme switch |
 | 📖 Guide | Built-in bilingual tutorial |
 
 ### 🛠️ Develop / build from source
