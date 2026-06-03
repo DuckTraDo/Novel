@@ -65,7 +65,7 @@ const zh: Dict = {
   "wb.reset": "重置本章",
   "wb.needChapter": "请先选择或新建一个章节 ID。",
   "wb.needIdea": "请填写本章 idea。",
-  "wb.generating": "正在调用本地模型生成整章，请稍候……",
+  "wb.generating": "正在调用模型生成整章，请稍候……",
   "wb.genOk": "章节 {id} 已生成。",
   "wb.execFail": "执行失败，请看下方日志。",
   "wb.saved": "正文已保存。",
@@ -101,6 +101,17 @@ const zh: Dict = {
   "st.projectDir": "项目目录",
   "st.projectDirHint": "小说项目根目录；留空则使用默认路径",
   "st.projectDirPlaceholder": "留空使用默认目录",
+  "st.provider": "LLM 路线",
+  "st.providerHint": "选择按量计费的 API，或本机已登录的订阅 CLI（走 Pro/Max、ChatGPT 订阅额度）",
+  "st.providerApi": "API（本地 / OpenAI 兼容）",
+  "st.providerClaude": "Claude Code 订阅",
+  "st.providerCodex": "Codex 订阅（ChatGPT）",
+  "st.subModelHintClaude": "订阅模型别名，如 sonnet / opus；留空用订阅默认模型",
+  "st.subModelHintCodex": "订阅模型名，如 gpt-5-codex；留空用订阅默认模型",
+  "st.subNoteClaude":
+    "需先安装 Claude Code 并用 Pro/Max 账号登录（终端运行 claude 登录）。本路线走订阅额度，会忽略下方 API Key。",
+  "st.subNoteCodex":
+    "需先安装 Codex CLI 并用 ChatGPT 订阅登录（终端运行 codex login）。本路线走订阅额度，会忽略下方 API Key。",
   "st.baseUrl": "LLM Base URL",
   "st.baseUrlHint": "须含协议头，多数本地服务在 /v1 下，例如 http://127.0.0.1:18180/v1",
   "st.apiKey": "LLM API Key",
@@ -203,6 +214,18 @@ const en: Dict = {
   "st.projectDir": "Project directory",
   "st.projectDirHint": "Root of your novel project; leave empty for the default path",
   "st.projectDirPlaceholder": "Leave empty for the default directory",
+  "st.provider": "LLM route",
+  "st.providerHint":
+    "Pick the pay-as-you-go API, or a subscription CLI you're already signed into (uses your Pro/Max or ChatGPT quota)",
+  "st.providerApi": "API (local / OpenAI-compatible)",
+  "st.providerClaude": "Claude Code subscription",
+  "st.providerCodex": "Codex subscription (ChatGPT)",
+  "st.subModelHintClaude": "Subscription model alias, e.g. sonnet / opus; empty = subscription default",
+  "st.subModelHintCodex": "Subscription model name, e.g. gpt-5-codex; empty = subscription default",
+  "st.subNoteClaude":
+    "Requires Claude Code installed and signed in with a Pro/Max account (run claude in a terminal to log in). Uses your subscription quota; the API Key below is ignored.",
+  "st.subNoteCodex":
+    "Requires Codex CLI installed and signed in with ChatGPT (run codex login). Uses your subscription quota; the API Key below is ignored.",
   "st.baseUrl": "LLM Base URL",
   "st.baseUrlHint":
     "Must include the scheme; most local servers live under /v1, e.g. http://127.0.0.1:18180/v1",

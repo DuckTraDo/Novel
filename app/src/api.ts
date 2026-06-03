@@ -5,12 +5,16 @@ export interface CommandResult {
   log: string;
 }
 
+export type LlmProvider = "api" | "claude_code" | "codex";
+
 export interface Settings {
   project_dir: string;
   llm_base_url: string;
   llm_api_key: string;
   llm_model: string;
   disable_thinking?: boolean;
+  // LLM 路线：api(OpenAI 兼容) | claude_code(Claude Code 订阅) | codex(Codex/ChatGPT 订阅)
+  llm_provider?: LlmProvider;
 }
 
 export type ReportKind = "generation" | "consistency" | "memory";

@@ -31,6 +31,9 @@ pub struct Settings {
     pub max_output_tokens: Option<u32>,
     // 关闭模型思考（Qwen3 等思考模型）。None/true = 关闭思考（给 prompt 追加 /no_think）
     pub disable_thinking: Option<bool>,
+    // LLM 路线："api"(默认/OpenAI 兼容) | "claude_code"(Claude Code 订阅) | "codex"(Codex/ChatGPT 订阅)
+    // None 视为 "api"，兼容老版本设置文件
+    pub llm_provider: Option<String>,
 }
 
 impl Default for Settings {
@@ -44,12 +47,25 @@ impl Default for Settings {
             top_p: None,
             max_output_tokens: None,
             disable_thinking: None,
+            llm_provider: None,
         }
     }
 }
 
+/// 是否走订阅 CLI 路线（Claude Code / Codex）而非 OpenAI 兼容 HTTP API。
+fn is_cli_provider(settings: &Settings) -> bool {
+    matches!(
+        settings.llm_provider.as_deref(),
+        Some("claude_code") | Some("codex")
+    )
+}
+
 /// 是否关闭思考：默认开启关闭（None 视为 true），除非用户显式设为 false。
+/// /no_think 只对本地 OpenAI 兼容模型（如 Qwen3）有意义；订阅 CLI 路线绝不追加。
 fn thinking_disabled(settings: &Settings) -> bool {
+    if is_cli_provider(settings) {
+        return false;
+    }
     settings.disable_thinking != Some(false)
 }
 
@@ -69,6 +85,8 @@ struct RunConfig {
     llm_api_key: String,
     model_name: String,
     max_output_tokens: Option<u32>,
+    // LLM 路线："api" | "claude_code" | "codex"
+    provider: String,
 }
 
 // ============================================================
@@ -197,8 +215,20 @@ fn build_run_config(app: &tauri::AppHandle) -> Result<RunConfig, String> {
     let settings = load_settings(app);
     let config = load_config_yaml(&project_dir);
 
-    let model_name = if settings.llm_model.trim().is_empty() {
-        config_string(&config, "model_name", "default-model")
+    let provider = settings
+        .llm_provider
+        .clone()
+        .unwrap_or_else(|| "api".to_string());
+
+    // API 路线：留空回退到 config.yaml 的 model_name。
+    // 订阅 CLI 路线：留空表示用订阅默认模型（不能回退到 config.yaml，否则会把
+    // "default-model" 当成 --model 传给 claude/codex 导致报错）。
+    let model_name = if provider == "api" {
+        if settings.llm_model.trim().is_empty() {
+            config_string(&config, "model_name", "default-model")
+        } else {
+            settings.llm_model.trim().to_string()
+        }
     } else {
         settings.llm_model.trim().to_string()
     };
@@ -216,6 +246,7 @@ fn build_run_config(app: &tauri::AppHandle) -> Result<RunConfig, String> {
         llm_api_key: settings.llm_api_key,
         model_name,
         max_output_tokens,
+        provider,
     })
 }
 
@@ -349,6 +380,56 @@ fn sys_user_messages(system_prompt: &str, user_prompt: &str) -> Vec<llm::ChatMes
             content: user_prompt.to_string(),
         },
     ]
+}
+
+/// 把消息列表拆成 (system, user) 两段文本，供订阅 CLI 路线使用。
+/// system 角色合并为一段；其余角色按出现顺序拼成 user。
+fn split_system_user(messages: &[llm::ChatMessage]) -> (String, String) {
+    let mut system = String::new();
+    let mut user_parts: Vec<String> = Vec::new();
+    for m in messages {
+        if m.role == "system" {
+            if !system.is_empty() {
+                system.push('\n');
+            }
+            system.push_str(&m.content);
+        } else {
+            user_parts.push(m.content.clone());
+        }
+    }
+    (system, user_parts.join("\n\n"))
+}
+
+/// 按当前 provider 分发到对应 LLM 路线。
+/// - api：OpenAI 兼容 HTTP（沿用 temperature/top_p/max_tokens）
+/// - claude_code / codex：调用本机已登录订阅的官方 CLI（采样参数由 CLI 自管）
+fn run_completion(
+    config: &RunConfig,
+    settings: &Settings,
+    messages: Vec<llm::ChatMessage>,
+    temperature: f64,
+    top_p: f64,
+    max_output_tokens: Option<u32>,
+) -> Result<String, String> {
+    match settings.llm_provider.as_deref() {
+        Some("claude_code") => {
+            let (system, user) = split_system_user(&messages);
+            llm::call_claude_code(&config.model_name, &system, &user)
+        }
+        Some("codex") => {
+            let (system, user) = split_system_user(&messages);
+            llm::call_codex(&config.model_name, &system, &user)
+        }
+        _ => llm::call_llm(
+            &config.llm_base_url,
+            &config.llm_api_key,
+            &config.model_name,
+            messages,
+            temperature,
+            top_p,
+            max_output_tokens,
+        ),
+    }
 }
 
 // ============================================================
@@ -810,6 +891,18 @@ fn write_generation_report(
 
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
 
+    // 模型信息按路线显示：api 显示 base_url；订阅 CLI 显示 provider，model 留空记为「订阅默认」
+    let model_disp = if config.model_name.trim().is_empty() {
+        "(订阅默认)".to_string()
+    } else {
+        config.model_name.clone()
+    };
+    let model_info = if config.provider == "api" {
+        format!("- model: {}\n- base_url: {}", config.model_name, config.llm_base_url)
+    } else {
+        format!("- provider: {}\n- model: {}", config.provider, model_disp)
+    };
+
     let report = format!(
         r#"# Chapter Generation Report: {chapter_id}
 
@@ -843,8 +936,7 @@ fn write_generation_report(
 
 ## Model Info
 
-- model: {model}
-- base_url: {base_url}
+{model_info}
 
 ## Generation Time
 
@@ -862,8 +954,7 @@ fn write_generation_report(
         context_tokens = context_tokens,
         warning_text = warning_text,
         output_len = output_text.chars().count(),
-        model = config.model_name,
-        base_url = config.llm_base_url,
+        model_info = model_info,
         now = now,
         raw_response = raw_response,
     );
@@ -940,10 +1031,9 @@ fn do_generate_chapter(
 
     log.push_str("[信息] 正在调用模型生成完整章节...\n");
 
-    let raw_response = match llm::call_llm(
-        &config.llm_base_url,
-        &config.llm_api_key,
-        &config.model_name,
+    let raw_response = match run_completion(
+        &config,
+        &settings,
         messages,
         temperature,
         top_p,
@@ -1216,10 +1306,9 @@ fn do_check_consistency(app: &tauri::AppHandle, chapter_id: &str) -> CommandResu
 
     let mut log = format!("[信息] 正在对 {} 进行一致性审查...\n", chapter_id);
 
-    let report = match llm::call_llm(
-        &config.llm_base_url,
-        &config.llm_api_key,
-        &config.model_name,
+    let report = match run_completion(
+        &config,
+        &settings,
         messages,
         0.4,
         top_p,
@@ -1235,11 +1324,20 @@ fn do_check_consistency(app: &tauri::AppHandle, chapter_id: &str) -> CommandResu
     };
 
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-    let config_yaml = load_config_yaml(&config.project_dir);
-    let model_name_cfg = config_string(&config_yaml, "model_name", "未知");
+    let model_label = if config.provider == "api" {
+        let config_yaml = load_config_yaml(&config.project_dir);
+        config_string(&config_yaml, "model_name", "未知")
+    } else {
+        let m = if config.model_name.trim().is_empty() {
+            "(订阅默认)".to_string()
+        } else {
+            config.model_name.clone()
+        };
+        format!("{} / {}", config.provider, m)
+    };
     let header = format!(
         "<!-- 一致性审查报告 -->\n<!-- 生成时间: {} -->\n<!-- 模型: {} -->\n\n",
-        now, model_name_cfg
+        now, model_label
     );
 
     let report_path = config
@@ -2162,15 +2260,7 @@ fn do_update_memory(app: &tauri::AppHandle, chapter_id: &str) -> CommandResult {
 
     // 记忆抽取必须吐出完整 JSON，绝不能被输出上限截断：
     // 这里不发送 max_tokens，让模型写到自然结束（仅受上下文窗口约束）。
-    let raw_output = match llm::call_llm(
-        &config.llm_base_url,
-        &config.llm_api_key,
-        &config.model_name,
-        messages,
-        0.3,
-        top_p,
-        None,
-    ) {
+    let raw_output = match run_completion(&config, &settings, messages, 0.3, top_p, None) {
         Ok(r) => r,
         Err(e) => {
             return CommandResult {
@@ -2615,6 +2705,7 @@ mod tests {
             llm_api_key: "x".into(),
             model_name: "test-model".into(),
             max_output_tokens: Some(100),
+            provider: "api".into(),
         };
         let idea = "主角回到故乡，发现父亲留下的一封信，决定调查旧事。";
         write_generation_report(
