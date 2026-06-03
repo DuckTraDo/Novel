@@ -2,7 +2,7 @@ name: Release
 
 # 自动打包并发布到 GitHub Releases：
 #   • 每次 push 到 main          → 自动更新「latest」滚动预发布
-#   • 推送形如 v0.1.0 的 tag     → 出对应版本的「正式版草稿」，确认后手动 Publish
+#   • 推送形如 v0.1.0 的 tag     → 出对应版本的「正式版」并自动发布（绿标 Latest，无需手动 Publish）
 #   • Actions 页手动 Run workflow → 同 latest
 # 注意：不对 push 加 paths 过滤——否则 tag 推送（无文件变更）会被跳过而不触发构建。
 on:
@@ -73,10 +73,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: app
-          # tag 触发 → 用该版本号出正式版草稿；其余（push main / 手动）→ 滚动更新 latest 预发布
+          # tag 触发 → 用该版本号出正式版并自动发布；其余（push main / 手动）→ 滚动更新 latest 预发布
           tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
           releaseName: ${{ startsWith(github.ref, 'refs/tags/') && format('Sodarie Novel {0}', github.ref_name) || 'Sodarie Novel (latest)' }}
-          releaseDraft: ${{ startsWith(github.ref, 'refs/tags/') }}
+          # 永不出草稿：tag 直接发布成绿标正式版，main/手动 出 latest 预发布
+          releaseDraft: false
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
           releaseBody: |
             Sodarie Novel —— 本地大模型长篇小说写作台。
